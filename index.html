@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SAYI AVCISI – Çocuklar İçin Matematik Bulmaca Oyunu (Android APK)</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --accent: #fbbf24;
+            --purple: #8b5cf6;
+            --cyan: #06b6d4;
+            --rose: #f43f5e;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #022c22 0%, #0f172a 50%, #1e1b4b 100%);
+            color: var(--text-light);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 24px 20px 64px;
+        }
+        /* HERO SECTION */
+        .hero {
+            background: radial-gradient(circle at top right, rgba(16,185,129,0.22), rgba(30,41,59,0.92));
+            border: 2px solid rgba(251, 191, 36, 0.5);
+            border-radius: 28px;
+            padding: 42px 32px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+            margin-bottom: 36px;
+        }
+        .hero-mascot {
+            font-size: 64px;
+            margin-bottom: 12px;
+            display: inline-block;
+            animation: floatBounce 2.4s ease-in-out infinite;
+        }
+        @keyframes floatBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .badge-pill {
+            display: inline-block;
+            background: rgba(251, 191, 36, 0.18);
+            color: var(--accent);
+            border: 1px solid var(--accent);
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 6px 16px;
+            border-radius: 999px;
+            margin-bottom: 14px;
+        }
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+            margin-bottom: 12px;
+        }
+        h1 span {
+            color: var(--accent);
+        }
+        .hero-sub {
+            max-width: 740px;
+            margin: 0 auto 28px;
+            color: #cbd5e1;
+            font-size: 1.12rem;
+        }
+        .cta-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+        .btn-apk {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 1.15rem;
+            padding: 16px 32px;
+            border-radius: 16px;
+            border: 2px solid #34d399;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-apk:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 30px rgba(16, 185, 129, 0.5);
+        }
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(51, 65, 85, 0.85);
+            color: #f8fafc;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1rem;
+            padding: 16px 26px;
+            border-radius: 16px;
+            border: 1px solid #64748b;
+            transition: background 0.2s;
+        }
+        .btn-secondary:hover {
+            background: rgba(71, 85, 105, 1);
+        }
+        .apk-links-box {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px dashed rgba(251, 191, 36, 0.6);
+            border-radius: 16px;
+            padding: 16px 20px;
+            max-width: 820px;
+            margin: 12px auto 0;
+            text-align: left;
+            font-size: 0.92rem;
+        }
+        .apk-links-box code {
+            display: block;
+            background: #090d16;
+            color: #38bdf8;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-top: 6px;
+            word-break: break-all;
+            font-family: Consolas, monospace;
+        }
+        /* GRID FEATURES */
+        .section-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--accent);
+            margin: 36px 0 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: rgba(30, 41, 59, 0.88);
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+        }
+        .card h3 {
+            font-size: 1.22rem;
+            color: #ffffff;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card p, .card li {
+            color: #cbd5e1;
+            font-size: 0.95rem;
+        }
+        .card ul {
+            padding-left: 18px;
+            margin-top: 8px;
+        }
+        .card li {
+            margin-bottom: 6px;
+        }
+        /* 5 DAYS TIMELINE */
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+        }
+        .day-box {
+            border-radius: 18px;
+            padding: 18px;
+            border: 1.5px solid rgba(255,255,255,0.18);
+        }
+        .day-1 { background: linear-gradient(160deg, #064e3b, #022c22); }
+        .day-2 { background: linear-gradient(160deg, #78350f, #451a03); }
+        .day-3 { background: linear-gradient(160deg, #4c1d95, #2e1065); }
+        .day-4 { background: linear-gradient(160deg, #164e63, #083344); }
+        .day-5 { background: linear-gradient(160deg, #881337, #4c0519); }
+        .day-box h4 {
+            color: var(--accent);
+            font-size: 1.08rem;
+            margin-bottom: 6px;
+        }
+        .day-box p {
+            font-size: 0.88rem;
+            color: #e2e8f0;
+        }
+        footer {
+            text-align: center;
+            margin-top: 56px;
+            padding-top: 24px;
+            border-top: 1px solid #334155;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-mascot">🦊🧭</div>
+        <div><span class="badge-pill">✨ 3. Sınıf Seviyesi • %100 Çevrimdışı (Offline) • Garantili Çözülebilir Tahtalar</span></div>
+        <h1>SAYI <span>AVCISI</span></h1>
+        <p class="hero-sub">
+            Çocukların toplama, çıkarma, çarpma ve bölme işlemlerini klasik testler yerine Sudoku benzeri dinamik sayı tablolarında
+            blokları eşleştirerek ve patlatarak öğrendiği 5 günlük eğitici Android bulmaca macerası!
+        </p>
+
+        <div class="cta-group">
+            <a class="btn-apk" href="https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk" download>
+                📲 Android APK İndir (SAYI-AVCISI.apk)
+            </a>
+            <a class="btn-secondary" href="https://github.com/ardaozkul/SAYI-AVCISI/blob/main/SAYI-AVCISI.apk">
+                📦 GitHub Üzerinde APK Dosyası
+            </a>
+            <a class="btn-secondary" href="https://github.com/ardaozkul/SAYI-AVCISI">
+                💻 Kaynak Kodları (GitHub)
+            </a>
+        </div>
+
+        <div class="apk-links-box">
+            <strong>📌 Doğrudan Kurulum Dosyası (APK) İndirme Adresleri:</strong>
+            <code>https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk</code>
+            <code>https://github.com/ardaozkul/SAYI-AVCISI/raw/main/apk/SAYI-AVCISI-release.apk</code>
+            <code>https://github.com/ardaozkul/SAYI-AVCISI/raw/main/apk/SAYI-AVCISI-debug.apk</code>
+        </div>
+    </section>
+
+    <!-- 5 GÜNLÜK PROGRAM -->
+    <h2 class="section-title">🗺️ 5 Günlük Eğitim ve Macera Programı (Her Gün 60 Dakika)</h2>
+    <div class="days-grid">
+        <div class="day-box day-1">
+            <h4>🌲 1. GÜN: Sayıların Gücü</h4>
+            <p><strong>Sayı Ormanı:</strong> 0 ve 1 kavramı, 1–10 toplama, 1–10 çıkarma, iki sayılı eşleştirme, 4×4 ve 5×5 tablolar.</p>
+        </div>
+        <div class="day-box day-2">
+            <h4>💎 2. GÜN: Onluk Avcısı</h4>
+            <p><strong>Hazine Mağarası:</strong> 10–20 toplama ve çıkarma, üç sayılı toplama, zincir çıkarma, 21–100 hedefleri, 5×5 ve 6×6 tablolar.</p>
+        </div>
+        <div class="day-box day-3">
+            <h4>🏰 3. GÜN: Çarpım Ormanı</h4>
+            <p><strong>Çarpım Kalesi:</strong> Önce 0, 1, 2, 3, 4, 5, 10 çarpımları, ardından 6, 7, 8, 9 çarpımları, görsel gruplama ve <code>?×4=20</code> eksik çarpan bulma.</p>
+        </div>
+        <div class="day-box day-4">
+            <h4>🚀 4. GÜN: Bölme Mağarası</h4>
+            <p><strong>Bölme Uzayı:</strong> Kalansız bölme (sıfıra bölme korumalı), çarpma-bölme ilişkisi, <code>20÷?=5</code> eksik bölen bulma, 6×6 ve 8×8 tablolar.</p>
+        </div>
+        <div class="day-box day-5">
+            <h4>🏝️ 5. GÜN: Büyük Final</h4>
+            <p><strong>Matematik Adası:</strong> Dört işlem karışık bulmacalar, 8×8 ve 10×10 uzman oyun tahtaları ve Büyük Final Şampiyonluk Ödülü!</p>
+        </div>
+    </div>
+
+    <!-- OYUN MEKANİKLERİ -->
+    <h2 class="section-title">⚙️ Temel Oyun Mekanikleri ve Güvenlik Sistemleri</h2>
+    <div class="grid-3">
+        <div class="card">
+            <h3>🎯 Açık ve Tutarlı Eşleştirme</h3>
+            <ul>
+                <li>Yatay (sağa/sola), dikey (yukarı/aşağı) ve çapraz tüm yönlerde eşleştirme.</li>
+                <li>Ters yönde okuma ve aradaki bloklar temizlendikçe açılan uzak mesafe doğrusal eşleştirme.</li>
+                <li>Aralarında başka bir aktif sayı bulunan blokların yanlışlıkla eşleşmesini engelleyen net görüş hattı algoritması.</li>
+                <li>Ayrı oyun kuralı olarak sunulan <strong>Serbest Eşleştirme Modu</strong>.</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h3>🛡️ Garantili Çözüm & Altın Kurtarma</h3>
+            <ul>
+                <li>4×4, 5×5, 6×6, 8×8 ve 10×10 tahtaların tamamı oyuna başlamadan önce matematiksel çözülebilirlik testinden geçer.</li>
+                <li>Bölüm sonunda eşleşmeyen tek bir sayı bloğu bile kalmaz.</li>
+                <li><strong>3 Joker:</strong> İpucu (-5p), Yeniden Düzenle (-10p), Çifte Hamle (-5p).</li>
+                <li><strong>Gizli 4. Sistem (ALTIN KURTARMA):</strong> 3 joker biter ve hamle kalmazsa çocuğa hissettirmeden ve puan düşürmeden tahtayı otomatik çözülebilir yapar!</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h3>👨‍👩‍👧 Ebeveyn Paneli & Puanlama</h3>
+            <ul>
+                <li>Günlük maksimum <strong>100 puan</strong> tavanı ve 0 puan tabanı koruması.</li>
+                <li>Toplama, çıkarma, çarpma ve bölme başarı yüzdeleri.</li>
+                <li>En çok zorlanılan işlemler ve çarpım tablosu sayı analizi.</li>
+                <li>Ortalama cevap süresi, günlük oyun süresi takibi.</li>
+                <li>Süre sınırını (Süreli / Rahat Mod) ve ses ayarlarını değiştirme imkânı.</li>
+            </ul>
+        </div>
+    </div>
+
+    <footer>
+        SAYI AVCISI – Kotlin & Jetpack Compose ile Geliştirilmiş Android Matematik Bulmaca Oyunu • GitHub: <a href="https://github.com/ardaozkul/SAYI-AVCISI" style="color: var(--accent);">ardaozkul/SAYI-AVCISI</a>
+    </footer>
+</div>
+</body>
+</html>

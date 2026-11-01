@@ -1,0 +1,16 @@
+# Gradlwe / IDE build cache (APK teslimat dosyaları kök dizinde ve apk/ klasöründe tutulur)
+.gradle/
+local.properties
+.idea/
+*.iml
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+app/build/intermediates/
+app/build/tmp/
+app/build/generated/
+app/build/kotlin/
+!SAYI-AVCISI.apk
+!apk/*.apk
+!app/build/outputs/apk/**/*.apk
