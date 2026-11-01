@@ -1,167 +1,205 @@
 # 🦊 SAYI AVCISI – Çocuklar İçin Matematik Bulmaca Oyunu (Android APK)
 
-**SAYI AVCISI**, 3. sınıf seviyesindeki çocukların **toplama (+), çıkarma (-), çarpma (×) ve bölme (÷)** işlemlerini oyun oynarken öğrenmesini, anlamlandırmasını ve hızlandırmasını sağlayan, **Kotlin & Jetpack Compose** ile geliştirilmiş, **%100 çevrimdışı (offline)** çalışan aşamalı bir Android matematik bulmaca oyunudur.
+**SAYI AVCISI**, 3. sınıf seviyesindeki çocukların **toplama (+), çıkarma (−), çarpma (×) ve bölme (÷)** işlemlerini
+oyun oynarken pekiştirmesini sağlayan, **Kotlin & Jetpack Compose** ile yazılmış, **%100 çevrimdışı (offline)**
+çalışan 5 günlük bir Android matematik bulmaca oyunudur.
+
+Çocuk tahtadaki sayı bloklarını hedefe göre avlar: **bölümde tek bir hedef vardır** (ör. "Toplamı 7"),
+tahtadaki **her** blok grubu o hedefi sağlar. Sıra önemli değildir; taşlar yatay, dikey, çapraz ve her iki
+yönde de eşleşebilir — aralarında blok kalmadığı anda uzaktaki taşlar da buluşur.
+
+> **2.0.0 motoru baştan yazdı.** 1.x'te çocuk "bazen kabul eden bazen etmeyen" eşleşmeler yaşıyordu
+> (çok hedefli bölümler + sıraya duyarlı çıkarma/bölme kontrolü). Şimdi kural tek hedefe indirgendi,
+> tüm işlemler sıra gözetmez hale geldi ve her tahta **eşleşmeyen tek blok kalmayacak şekilde** üretiliyor.
 
 ---
 
 ## 📲 KURULUM DOSYASI (APK) İNDİRME ADRESLERİ
 
-Derlenmiş ve doğrudan Android telefon/tabletlere kurulmaya hazır **APK** dosyalarına aşağıdaki bağlantılardan doğrudan ulaşabilirsiniz:
+Derlenmiş ve doğrudan Android telefon/tabletlere kurulmaya hazır **APK** dosyaları:
 
-- 🚀 **Doğrudan APK İndirme Adresi (Ana Paket):**  
+- 🚀 **Doğrudan APK İndirme Adresi (Ana Paket, v2.0.0):**
   👉 **[https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk)**
-- 📦 **GitHub Depo İçi APK Sayfası:**  
+- 📦 **GitHub Depo İçi APK Sayfası:**
   👉 **[https://github.com/ardaozkul/SAYI-AVCISI/blob/main/SAYI-AVCISI.apk](https://github.com/ardaozkul/SAYI-AVCISI/blob/main/SAYI-AVCISI.apk)**
 - 📂 **Alternatif APK Konumları (Depo İçi):**
-  - Release APK: [`apk/SAYI-AVCISI-release.apk`](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/apk/SAYI-AVCISI-release.apk) (`SAYI-AVCISI.apk` ile aynı imzalı kurulum paketi)
+  - Release APK: [`apk/SAYI-AVCISI-release.apk`](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/apk/SAYI-AVCISI-release.apk)
   - Debug APK: [`apk/SAYI-AVCISI-debug.apk`](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/apk/SAYI-AVCISI-debug.apk)
   - Web Giriş / Bilgilendirme Sayfası: [`index.html`](https://github.com/ardaozkul/SAYI-AVCISI/blob/main/index.html)
 
----
-
-## 📸 OYUN İÇİNDEN GERÇEK EKRAN GÖRÜNTÜLERİ
-
-Aşağıdaki görüntüler Android emülatöründe (Pixel 5, Android 14) kurulu APK'dan `adb screencap` ile gerçek olarak alınmıştır.
-Tüm dosyalar [`docs/screenshots/`](https://github.com/ardaozkul/SAYI-AVCISI/tree/main/docs/screenshots) klasöründedir.
-
-| 🗺️ 5 Günlük Macera Haritası | 💎 2. Gün: Hazine Mağarası |
-|:---:|:---:|
-| ![Macera Haritası](docs/screenshots/01-macera-haritasi.png) | ![2. Gün](docs/screenshots/02-macera-haritasi-2-gun.png) |
-
-| 🎯 5×5 Toplama Tahtası | ✨ Eşleşme ve Ödül Anı |
-|:---:|:---:|
-| ![Oyun Tahtası](docs/screenshots/03-oyun-tahtasi-toplama.png) | ![Eşleşme](docs/screenshots/04-oyun-eslesme-animasyonu.png) |
-
-| 🏰 Çarpım Kalesi | 🏝️ 10×10 Uzman Tahtası |
-|:---:|:---:|
-| ![Çarpma](docs/screenshots/05-oyun-tahtasi-carpma.png) | ![Uzman](docs/screenshots/06-oyun-uzman-tahtasi.png) |
-
-| 🎉 Bölüm Tamamlandı | 🧪 Özel Toplama Laboratuvarı |
-|:---:|:---:|
-| ![Tamamlandı](docs/screenshots/07-bolum-tamamlandi.png) | ![Laboratuvar](docs/screenshots/08-ozel-toplama-laboratuvari.png) |
-
-| 🎲 Laboratuvar Seçenekleri | 👨‍👩‍👧 Ebeveyn Paneli | 📊 Başarı Analizi |
-|:---:|:---:|:---:|
-| ![Serbest](docs/screenshots/09-ozel-toplama-laboratuvari-secenekler.png) | ![Ebeveyn](docs/screenshots/10-ebeveyn-paneli.png) | ![Analiz](docs/screenshots/11-ebeveyn-paneli-analiz.png) |
-
-> Tüm kareler `node tools/capture-screenshots.mjs` komutuyla yeniden üretilebilir: araç emülatörde uygulamayı kendisi oynar (adb + uiautomator) ve gerçek ekran görüntülerini kaydeder.
-> Projenin orijinal gereksinim listesi: [docs/proje-gereksinimleri.md](docs/proje-gereksinimleri.md)
+**Gereksinim:** Android 7.0 (API 24) ve üzeri · İndirme boyutu ~12 MB · İnternet gerekmez, tüm ilerleme cihazda saklanır.
 
 ---
 
-## 🆕 1.1.0 SÜRÜM YENİLİKLERİ
+## 📸 OYUN İÇİNDEN GERÇEK EKRAN GÖRÜNTÜLERİ (v2.0.0)
 
-- 🔊 **Ses efektleri artık gerçekten çalıyor:** `AudioTrack` `MODE_STATIC` + `write()` hatası (sessiz çalma) `MODE_STREAM` akışlı oynatmaya çevrildi; doğru/yanlış/bonus/bölüm bitirme sesleri cihazda duyulur.
-- 📌 **Kaldığı yerden devam (Bölüm 15):** Yarım kalan tahta (bloklar, kalan hedefler, jokerler, seri, hata sayısı) cihazda saklanır; uygulama kapanıp açılınca **aynı tahtaya** dönülür. Tahta üretimi artık tohum (seed) tabanlı ve deterministiktir. `🆕 YENİ TAHTA` düğmesi kaydı sıfırlar.
-- 🛡️ **ALTIN KURTARMA kurala bağlandı:** Sistem artık jokerler varken erken devreye girip joker ekonomisini bozmuyor; önce çocuğu doğru jogere yönlendiriyor, çocuk ~25 saniye takılı kalırsa (veya 3 joker de bittiyse) sessizce ve puansız kurtarıyor.
-- 🧱 **Çökme koruması:** Çözülebilirlik doğrulaması düşüren tahtalarda farklı tohumla yeniden üretim + serbest eşleştirme moduna geçiş (`BoardFactory.createReliably`); uç senaryoda oyun kapanmıyor.
-- ⬅️ **Geri tuşu düzeltmesi:** Android geri tuşu oyunun içinden uygulamayı kapatmak yerine macera haritasına döner (`BackHandler`).
-- ➖ **Puan adaleti:** Geometrik (görüş hattı) ihlalleri de Bölüm 10 gereği `-1` puan ve hata olarak kaydediliyor; süre bonusu (`+3`) artık yalnızca gerçekten süreli bölümlerde sürenin altında bitirildiğinde veriliyor.
-- 📅 **Gerçek "günlük" semantiği:** Günlük 100 puan tavanı ve günlük oyun süresi takvim günü değişince otomatik sıfırlanıyor.
-- 🔋 **Performans/kayıt sağlığı:** Süre sayacı diske saniye saniye değil 15 saniyede bir yazılıyor.
-- ♿ **Çocuk ve erişim dostu arayüz:** Sayı blokları ve joker düğmeleri ekran okuyucu için etiketlendi (`Role.Button`, `contentDescription`), joker düğmeleri ≥ 54 dp dokunma alanına çıkarıldı.
-- 📊 **Ebeveyn paneli doğruluğu:** Hiç deneme yapılmamış işlem türü artık `%100 başarılı` gibi gösterilmiyor ("Henüz deneme yok"); ek süre ayarı `-15..+60 sn` tam aralığında seçilebiliyor.
-- 📐 **Dar ekran yerleşimi:** Ebeveyn panelindeki 5 günlük ilerleme kutuları artık `weight` ile eşit paylaşıyor (metin bölünmüyor), ana ekran üst barında "Ebeveyn" düğmesi ikinci satıra kırılmıyor ve Kaşif Tilki mesajı kesilmeden sarıyor.
-- ✅ **Testler 7 → 15 doğrulama kriterine çıkarıldı:** Kesin puan tablosu, kurtarma politikası, tohum determinizmi/çökmesiz üretim, kayıt geri yükleme, tam tahta temizliği, eksik çarpan/bölen/bölünen formatları ve 5 gün × 6 aşama müfredat yapısı otomatik test altında.
+Aşağıdaki kareler Android emülatöründe (Pixel 5) kurulu **2.0.0 APK**'dan `adb screencap` ile gerçek olarak
+alındı; oyunun kendisi `tools/capture-screenshots.mjs` tarafından (uiautomator ile) gerçekten oynanarak üretildi.
+
+| 🦊 Giriş Ekranı | 🗺️ 5 Günlük Macera Haritası |
+|:---:|:---:|
+| ![Giriş](docs/screenshots/01-giris-ekrani.png) | ![Harita](docs/screenshots/02-macera-haritasi.png) |
+
+| 🌳 1. Gün: Toplama 4×4 | ✨ Eşleşme Sonrası (temizlenen taşlar + puan) |
+|:---:|:---:|
+| ![Toplama](docs/screenshots/03-oyun-tahtasi-toplama.png) | ![Eşleşme](docs/screenshots/04-eslesme-sonrasi.png) |
+
+| 🎉 Bölüm Bitti Kutlaması | ⛏️ 2. Gün: Çıkarma (Hazine Mağarası) |
+|:---:|:---:|
+| ![Kutlama](docs/screenshots/05-bolum-bitti-kutlama.png) | ![Çıkarma](docs/screenshots/06-oyun-tahtasi-cikarma.png) |
+
+| 🏰 3. Gün: Çarpma (Çarpım Kalesi) | 🚀 4. Gün: Bölme (Bölme Uzayı) |
+|:---:|:---:|
+| ![Çarpma](docs/screenshots/07-oyun-tahtasi-carpma.png) | ![Bölme](docs/screenshots/08-oyun-tahtasi-bolme.png) |
+
+| 🏝️ 10×10 Büyük Final (~15 dk) | 🎯 Serbest Mod (yön/mesafe yok) |
+|:---:|:---:|
+| ![Final](docs/screenshots/09-buyuk-final-10x10.png) | ![Serbest](docs/screenshots/10-serbest-mod-tahtasi.png) |
+
+| 👨‍👩‍👧 Ebeveyn Paneli | 📊 Günlük İlerleme ve Çarpım Tablosu Analizi |
+|:---:|:---:|
+| ![Ebeveyn](docs/screenshots/11-ebeveyn-paneli.png) | ![Analiz](docs/screenshots/12-ebeveyn-paneli-analiz.png) |
+
+> Kareleri yeniden üretmek için: `node tools/capture-screenshots.mjs app/build/outputs/apk/debug/app-debug.apk`
+> Orijinal gereksinim listesi: [docs/proje-gereksinimleri.md](docs/proje-gereksinimleri.md)
 
 ---
 
-## 🌟 PROJENİN ÖZELLİKLERİ VE MİMARİSİ
+## 🆕 2.0.0 — SIFIRDAN YAZILAN MOTOR
 
-### 1. Ana Oyun Mekaniği ve Tutarlı Eşleştirme Algoritması
-- Ekranda Sudoku kurallarına bağlı olmayan, dinamik boyutlu (**4×4, 5×5, 6×6, 8×8, 10×10**) büyük bir sayı tablosu yer alır.
-- **Doğrusal Eşleştirme Modu (`MatchRuleMode.DIRECTIONAL`):**
-  - Yatay sağa ve sola, dikey yukarı ve aşağı, çapraz tüm yönlerde (8 yön) ve ters yönde okuma desteklenir.
-  - **Önemli Kural:** Aralarında başka bir aktif sayı bloğu bulunan iki sayının yalnızca aynı satır/sütun/çaprazda olduğu için eşleşmesine **izin verilmez**. Ancak aradaki bloklar önceki hamlelerle yok edildiğinde, birbirine bitişik olmayan aynı doğrultudaki sayılar eşleşebilir!
-- **Serbest Eşleştirme Modu (`MatchRuleMode.FREE`):**
-  - Ayrı bir oyun kuralı olarak sunulur; tablodaki farklı satır ve sütunlardaki uygun sayılar serbestçe eşleştirilebilir.
+### 1. Tek hedef kuralı: "bazen oluyor bazen olmuyor" bitti
+- **Bir bölüm = tek hedef.** Bölümdeki her blok grubu aynı hedefi sağlar (`RuleKind` + `target`),
+  arayüzde hangi hedefin aktif olduğu tartışması yoktur.
+- **Sıra hiçbir işlemde önemli değil.** `RuleEngine.mathMatches` çıkarmada `|a−b|`, bölmede her iki
+  yönü de dener (`8÷2` ve `2÷8` tek kontrolde). Çocuk hangi taşa önce dokunduğunu düşünmez.
+- **Sıfır gerçek bir sayı olarak oyunda:** `0+1=1`, `5−5=0` (ikiz sayılar), `0×4=0`, `0÷7=0` bölümleri var;
+  sıfıra bölme üretimin hiçbir aşamasında oluşmaz.
+- **Geometri iki kuraldan biriyle sabit:** `LINE_OF_SIGHT` (aynı satır/sütun/45° çapraz + aralarında aktif
+  blok yok — ters yön dahil) veya `FREE` (yön ve mesafe serbest). Reddedilen her hamle ekranda tek cümleyle
+  açıklanır: *"Aralarında taş var, önce onu temizle"* gibi.
 
-### 2. Dört İşlem Eğitim Modları
-- **Toplama Modu (+):**
-  - `1`'den `10`'a kadar tek tek hedefler, `11-15`, `16-20`, `21-30`, `31-50` ve `51-100` arası hedef toplamlar.
-  - Sıfırın etkisiz eleman özelliği (`0+1=1`, `0+5=5`, `0+0=0`) özel olarak öğretilir.
-  - Başlangıçta 2 sayı (`3+4=7`, `8+2=10`), ilerleyen seviyelerde 3 sayının toplamı (`2+3+2=7`, `5+4+1=10`, `8+7+5=20`) hedeflenir.
-- **Çıkarma Modu (-):**
-  - Seviyeler `0` hedefinden (`5-5=0`, `7-6=1`, `9-4=5`, `15-8=7`, `20-12=8`) başlar.
-  - İlk seviyelerde 2 sayı, sonraki seviyelerde 3 sayılı zincir çıkarma işlemleri bulunur.
-  - Negatif sonuçlara izin verilmez; büyük sayıdan küçük sayının çıkarılması zorunludur.
-  - **Görsel Nesne Eksilme Animasyonu:** Çocuğun çıkarma işlemini somutlaştırması için eksilen sayıdan nesne eksilme gösterimi (`🍎` / `❌`) sunulur.
-- **Çarpma Modu (×):**
-  - Öncelik `0, 1, 2, 3, 4, 5, 10` çarpımlarına, ardından `6, 7, 8, 9` çarpımlarına verilir.
-  - **Görsel Gruplama** ve ilerleyen seviyelerde **Eksik Çarpanı Bulma (`? × 4 = 20`)** özelliği içerir.
-- **Bölme Modu (÷):**
-  - Çarpmanın tersi olarak yalnızca **kalansız bölme** (`0÷2=0`, `6÷2=3`, `20÷4=5`, `56÷7=8`, `81÷9=9`) kullanılır.
-  - **Sıfıra bölme kesinlikle sorulmaz ve engellenir.**
-  - İlerleyen seviyelerde **Eksik Bölen (`20 ÷ ? = 5`)** ve **Eksik Bölünen (`? ÷ 4 = 5`)** soruları yer alır.
+### 2. Eşleşmeyen blok bırakmayan tahta üretimi
+- Tahta **tersine döşeme** ile kurulur: ızgara baştan 2'li/3'lü bitişik doğru parçalarına bölünür,
+  değerler grup grup hedefi sağlayacak şekilde atanır (`BoardBuilder`). Bu yüzden **her bölümde
+  eşleşmeyen tek sayı kalmaz** ve planlanan hamle sayısı tahtadan bellidir.
+- 100 bloklu **10×10 büyük final** dahil tüm tahtalar 3 farklı tohumla test edilir:
+  30 bölüm × 3 tohum = 90 tahta, tamamı sıfır kalan blokla kapanır.
 
-### 3. Garantili Çözülebilir Oyun Tahtaları
-- Her oyun tahtası oyuna başlamadan önce `BoardGeneratorAndSolver.verifyBoardSolvability` algoritması ile matematiksel ve geometrik olarak doğrulanır.
-- Bölüm sonunda eşleşmeyen tek bir sayı bloğu bile kalmaz (tüm bloklar temizlenir).
+### 3. Tıkanma imkânsız: ALTIN KURTARMA + sihirli blok
+- Her doğru hamleden sonra `BoardDoctor` kalan taşlarda geçerli hamle olup olmadığına bakar.
+- Hamle kalmadıysa **ücretsiz** (puan/joker/seri gitmez) kurtarma devreye girer: kalan şekil yeniden
+  döşenir ve yeniden değerlenir.
+- Kalan şekil 2'li/3'lü gruplara hiç bölünemiyorsa **hesapta olmayan sihirli blok** boş/temizlenmiş bir
+  kareye eklenir — jokerler bitmiş olsa bile oyun asla bozulmaz.
 
-### 4. Bonus, 3 Joker ve Gizli 4. Kurtarma Sistemi: ALTIN KURTARMA
-- **Joker 1 – İPUCU (-5 Puan):** Doğru eşleşmenin hangi sayılardan oluştuğunu tahtada parlatarak gösterir.
-- **Joker 2 – YENİDEN DÜZENLE (-10 Puan):** Kalan blokları çözülebilir yeni bir düzene sokar.
-- **Joker 3 – ÇİFTE HAMLE (-5 Puan):** Bir sonraki doğru eşleşmenin puanını ikiye katlar.
-- **🛡️ ALTIN KURTARMA (Gizli 4. Sistem):** Üç joker de tükenirse ve oyun tahtasında geçerli hamle kalmazsa **otomatik, sessiz ve ekstra puan kaybettirmeden** devreye girer; kalan blokları doğrulanmış çözüm sırasına göre yeniden çözülebilir hale getirir. Çocuk hiçbir zaman çözümsüz bir seviyede mahsur kalmaz!
+### 4. Puanlama: günde en fazla 100 puan, jokerler puandan götürür
+| Olay | Puan |
+|:---|:---|
+| Doğru toplama / çıkarma / çarpma / bölme eşleşmesi | **+4 / +5 / +6 / +7** |
+| Üç taşlı grup | **+2** |
+| 6×6–7×7 tahta / 8×8–10×10 tahta | **+1 / +2** |
+| Üst üste doğru seri bonusu | **+0…+8** |
+| ⚡ Çifte Hamle aktifken doğru eşleşme | **2 kat** |
+| Süreli bölümü erken bitirme | **+1 / +3 / +5** |
+| 🔍 İpucu / 🔄 Yeniden Düzenle / ⚡ Çifte Hamle jokersi | **−5 / −10 / −5** |
+| Yanlış hamle | **puan gitmez**, sadece seri sıfırlanır |
+| **Günlük tavan** | **100 puan** (yeni günde otomatik sıfırlanır) |
 
-### 5. Günlük Puanlama (Maksimum 100 Puan) ve Süre Mekaniği
-- Doğru iki sayılı eşleşme: **+2** | Doğru üç sayılı eşleşme: **+3**
-- Arka arkaya 5 doğru: **+5** | Arka arkaya 10 doğru: **+10**
-- Hatasız bölüm bitirme: **+5** | Süre bonusu: **+3** | Günün görevini tamamlama: **+10**
-- Yanlış eşleşme: **-1** | Joker kullanımı: İlgili puan kadar düşüş sağlar.
-- **Sınır Koruması:** Günlük toplam puan kesinlikle **100 puanı geçmez** ve **0'ın altına düşmez**.
-- **Süre ve Rahat Mod:** Başlangıç/Kolay seviyelerde süre baskısı yoktur; Orta (**90 sn**), Zor (**60 sn**) ve Uzman (**45 sn**) seviyelerde süre dolduğunda çocuk cezalandırılmaz, süreyi yenileyebilir veya tek dokunuşla **Rahat Oyun Modu (Süresiz)** ile devam edebilir.
+- Kazanım (brut) tavana göre, joker harcaması ayrı sayılır: günlük puan **0'ın altına düşmez, 100'ü aşmaz**.
+- Hatasız + kurtarmasız bitirilen bölüm **💎 2 elmas**, hatasız ama kurtarmalı **💎 1 elmas**,
+  her bölüm bitişi **🪙 10 + tahta boyu + bölüm no** altın getirir.
 
-### 6. Beş Günlük Eğitim Programı (Her Gün 60 Dakika)
-Her gün; **10 dk Isınma + 15 dk 1. Ana Bulmaca + 5 dk Mola + 15 dk 2. Ana Bulmaca + 10 dk Karışık İşlemler + 5 dk Değerlendirme ve Ödül** olmak üzere 6 aşamadan oluşur:
-1. **1. GÜN: SAYILARIN GÜCÜ (Sayı Ormanı 🌲)** – `0` ve `1` kavramı, `1-10` toplama ve çıkarma, `4×4` ve `5×5` tablolar.
-2. **2. GÜN: ONLUK AVCISI (Hazine Mağarası 💎)** – `10-20` toplama ve çıkarma, üç sayılı toplama, zincir çıkarma, `5×5` ve `6×6` tablolar.
-3. **3. GÜN: ÇARPIM ORMANI (Çarpım Kalesi 🏰)** – `0, 1, 2, 3, 4, 5, 10` ve `6, 7, 8, 9` çarpımları, görsel gruplama, eksik çarpan bulma, `6×6` tablolar.
-4. **4. GÜN: BÖLME MAĞARASI (Bölme Uzayı 🚀)** – Kalansız bölme, çarpma-bölme ilişkisi, eksik bölen/bölünen bulma, `6×6` ve `8×8` tablolar.
-5. **5. GÜN: BÜYÜK MATEMATİK FİNALİ (Matematik Adası 🏝️)** – Dört işlem karışık, `8×8` ve `10×10` uzman tablolar, büyük final ve şampiyonluk ödülü.
+### 5. 5 gün × 6 bölüm = günde ~60 dakika
+| Gün | Dünya | Bölümler (hedefler) | Süre |
+|:---:|:---|:---|:---:|
+| 1 | 🌲 Sayı Ormanı | +1 · +2 · +5 · +7 · +10 · +10 (serbest) | ~60 dk |
+| 2 | 💎 Hazine Mağarası | +13 · +16 · +20 (8×8) · −2 · −0 (ikiz) · −5 | ~60 dk |
+| 3 | 🏰 Çarpım Kalesi | −4 · −7 · −10 (8×8) · ×6 · ×12 · ×24 | ~60 dk |
+| 4 | 🚀 Bölme Uzayı | ×36 · ÷0 · ÷2 · ÷5 · ×48 (8×8) · ÷6 (8×8) | ~60 dk |
+| 5 | 🏝️ Matematik Adası | +25 · −15 · ×54 · ÷8 (süre baskısı) · **+30 10×10 final (15 dk)** · ×30 serbest | ~60 dk |
 
-### 7. Ebeveyn Paneli
-- Tamamlanan günler ve bölümler, toplam işlem sayısı, doğru/yanlış sayıları.
-- Toplama, çıkarma, çarpma ve bölme ayrı ayrı başarı yüzdeleri (`%`).
-- En çok zorlanılan işlemler ve çarpım tablosunda zorlanılan sayılar (`0..10`) analizi.
-- Ortalama cevap süresi ve günlük oyun süresi.
-- Süre sınırını (Rahat Mod / Ek Süre) ve ses ayarlarını değiştirme imkânı.
+Bölümler sırayla açılır; yarım kalan tahta cihazda saklanır ve **KALDIĞIN YERDEN DEVAM** ile aynı tahtaya dönülür.
+
+### 6. Çocuk dostu görsel dil ve efektler
+- **5 dünya paleti** (orman/mağara/kale/uzay/ada) + ebeveyn paneli paleti: her bölüm kendi dünyasının
+  gradyanını, blok rengini ve vurgu rengini alır. Bloklar pastel, rakamlar koyu mürekkep —
+  kontrast oranı **9.2:1 – 13.4:1** aralığında (çocuk okuyabilirliği için ölçüldü).
+- **Hedef kartı her zaman üstte:** "🎯 HEDEF 7 — Yediye ulaşan komşu sayılar", işlem, tahta boyutu,
+  kural adı ve yüzde halkası tek bakışta. Bölümün amacı asla tahmin edilmez.
+- Efektler: taşa göre gecikmeli **pop-in** dalgası, seçimde **büyüme + parlama halkası**, seçilen taşlar
+  arasında **çizgi çizilmesi**, doğru eşleşmede **parçacık patlaması + uçan puan**, yanlışta **sarsılan
+  uyarı şeridi**, bölüm bitiminde **konfeti yağmuru**, ilerleme **halkaları**, ⚡ çifte hamle rozeti,
+  ✨ ALTIN KURTARMA afişi, son 20 saniyede **kırmızı nabız atan sayaç**.
+- **NASIL OYNANIR kartı** bölüm açılırken kendini gösterir: hedef, geometri kuralı, örnek işlem
+  (`Örneğin 3 × 4 = 12`) ve joker maliyetleri.
+- Sesler cihazda sentezlenir (PCM, asset yok): doğru/yanlış/bonus/bölüm bitimi; ebeveyn panelinden kapatılır.
+
+### 7. Ebeveyn paneli (gerçek verilerle)
+- Bugünkü puan (x/100), toplam işlem, doğru/yanlış, ortalama cevap süresi, günlük oyun süresi.
+- Gün gün ilerleme halkaları ve "n/6 bölüm" sayaçları.
+- İşlem türü bazında başarı yüzdeleri, en çok zorlanılan işlemler, **çarpım tablosunda 0–10 zorlanma ısı haritası**.
+- Ayarlar: ses, süreli/rahat mod, ek süre (−15 / normal / +30 / +60 sn).
+- Kontrol edilmeden çalışan iki sıfırlama: **yalnızca bugünün puanı** veya **tüm ilerleme**.
 
 ---
 
 ## 🛠️ KURULUM VE DERLEME TALİMATLARI
 
-### Android Cihaza Doğrudan APK Kurulumu
-1. Yukarıdaki bağlantıdan [`SAYI-AVCISI.apk`](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk) dosyasını Android telefon veya tabletinize indirin.
-2. Dosyaya dokunun (gerekirse *"Bilinmeyen kaynaklardan uygulama yüklemeye izin ver"* seçeneğini onaylayın) ve **Yükle** butonuna basın.
-3. İnternet bağlantısına ihtiyaç duymadan hemen oynamaya başlayabilirsiniz!
+### Android Cihaza APK Kurulumu
+1. [`SAYI-AVCISI.apk`](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk) dosyasını indirin.
+2. Dosyaya dokunun, gerekirse *"Bilinmeyen kaynaklardan uygulama yüklemeye izin ver"* seçeneğini onaylayın.
+3. İnternet bağlantısı gerekmeden hemen oynayabilirsiniz.
 
-### Kaynak Koddan Derleme (Android Studio / Gradle)
+### Kaynak Koddan Derleme
 ```bash
 git clone https://github.com/ardaozkul/SAYI-AVCISI.git
 cd SAYI-AVCISI
 ./gradlew testDebugUnitTest assembleDebug assembleRelease
+# debug  -> app/build/outputs/apk/debug/app-debug.apk
+# release-> app/build/outputs/apk/release/app-release.apk
+```
+
+### Mimari (motor arayüzden ayrı ve test edilebilir)
+```
+model/GameModels.kt        tek hedefli LevelSpec, Board, BlockCell, RuleKind, MatchRuleMode, JokerType
+engine/RuleEngine.kt       geometri + matematik doğrulama (sıra gözetmez), hamle arama, operand üretimi
+engine/BoardBuilder.kt     ızgarayı bitişik 2'li/3'lü gruplara bölen garantili tahta üretimi
+engine/BoardDoctor.kt      hamle bulma, ipucu, tıkanma tespiti, ALTIN KURTARMA + sihirli blok
+engine/CurriculumRepository 5 gün × 6 bölüm müfredatı, hedef metinleri
+engine/ScoreEngine.kt      puan, seri, tavan, joker maliyeti, ödüller
+engine/GameSession.kt      Compose'dan gözlemlenebilir durum makinesi + kayıt/geri yükleme
+engine/ProgressRules.kt    kilit açma sırası, gün ilerlemesi
+data/LocalProgressStorage  SharedPreferences: ilerleme, günlük brüt/harcama, yarım kalan tahta, istatistik
+ui/GameVisuals.kt          dünya paletleri, gradyanlar, kontrast güvencesi
+ui/GameEffects.kt          popIn / shake / pulse / ParticleBurst / FloatingScore / ConfettiRain / ProgressRing / ConnectionLine / GlowRing
+ui/GameScreenParts.kt      NumberTile, JokerButton, ObjectiveCard, ScoreBar
+ui/GameScreen.kt           oyun ekranı + nasıl oynanır / bölüm bitti / süre doldu katmanları
+ui/StartScreen.kt · AdventureMapScreen.kt · ParentPanelScreen.kt · SayiAvcisiApp.kt (yönlendirme)
 ```
 
 ---
 
 ## ✅ KALİTE KONTROL VE OTOMATİK TEST SONUÇLARI
 
-`SayiAvcisiQualityVerificationTest` birim test paketi ile aşağıdaki 15 kalite kontrol kriteri otomatik olarak doğrulanmıştır (`./gradlew testDebugUnitTest`):
-1. **Bütün işlem seviyelerinin matematiksel doğruluğu:** ✅ Başarılı (30 müfredat seviyesi + 15 özel toplama basamağı).
-2. **Sıfırın kullanıldığı işlemler (`0+1`, `0+0`, `5-5`, `0×4`, `0÷2`):** ✅ Başarılı.
-3. **Sıfıra bölme olmadığı doğrulaması:** ✅ Başarılı (Üretimde ve seçimde %100 engellenir).
-4. **Bütün oyun tahtalarının (`4×4`, `5×5`, `6×6`, `8×8`, `10×10`) çözülebilirliği:** ✅ Başarılı.
-5. **Hiçbir bölümde eşleşmeyen blok kalmadığı doğrulaması:** ✅ Başarılı.
-6. **Üç jokerin (`İpucu -5`, `Yeniden Düzenle -10`, `Çifte Hamle -5`) çalışması:** ✅ Başarılı.
-7. **Jokerler bitince `ALTIN KURTARMA` sisteminin otomatik devreye girmesi:** ✅ Başarılı.
-8. **Günlük puanın `100`'ü geçmemesi ve `0`'ın altına düşmemesi:** ✅ Başarılı.
-9. **Çevrimdışı yerel kayıt sistemi (`SharedPreferences`):** ✅ Başarılı.
-10. **İnternet olmadan %100 çevrimdışı çalışma (gerçek zamanlı PCM ses sentezi dahil):** ✅ Başarılı.
-11. **Telefon ve tablet dikey ekran uyumluluğu:** ✅ Başarılı.
-12. **Kararlılık ve performans testleri:** ✅ Başarılı.
-13. **Yarıda kalan bölümün kaydedilip aynı tahtadan devam edilebilmesi (bozuk kayıt güvenliği):** ✅ Başarılı (`GameSnapshotCodec` gidiş-dönüş ve bozulmuş veri testi).
-14. **Çökmesiz taht üretimi ve `ALTIN KURTARMA` karar politikası (hamle varken joker yönlendirmesi, yokken kurtarma):** ✅ Başarılı (`BoardFactory` + `GoldenRescuePolicy`).
-15. **Puan tablosunun birebir doğrulanması, eksik çarpan/bölen/bölünen biçimleri ve 5 gün × 6 basamak müfredat yapısı:** ✅ Başarılı.
+`app/src/test/java/com/sayiavcisi/app/EngineRulesTest.kt` motoru sahte depo köprüsüyle (FakeBridge) test eder;
+**22 test, 0 başarısız** (`./gradlew testDebugUnitTest`):
 
-Test paketi sonucu: **14 test, 0 başarısız** — `app/build/reports/tests/testDebugUnitTest/index.html`.
+1. Sıra gözetmeyen toplama/çıkarma/çarpma/bölme eşleşmeleri — ✅
+2. Bölüneni 0 olan ifadede sıfıra bölme asla kabul edilmez — ✅
+3. Geçersiz hamle puan düşürmez, yalnızca seriyi sıfırlar — ✅
+4. Görüş hattı kuralı: aradaki blok engeller, ters yön ve çapraz serbesttir — ✅
+5. Serbest modda yön/mesafe aranmaz — ✅
+6. 30 bölüm × 3 tohum: her tahta tamamen kapanır, her grup tek hedefi sağlar — ✅
+7. Plan sırasıyla oynanınca tahta koskoca temizlenir — ✅
+8. Rastgele oynansa bile asla tıkanılmaz (kurtarma gerekirse devreye girer) — ✅
+9. 10×10 büyük final kapanır — ✅
+10. Çıkmaz tahtada ALTIN KURTARMA yeniden dizer, tek kalan taşta sihirli blok doğar — ✅
+11. Günlük puan 100'ü aşmaz, 0'ın altına düşmez — ✅
+12. Jokerler puandan götürür ve hak düşürür — ✅
+13. ⚡ Çifte Hamle bir sonraki eşleşmeyi iki katlar — ✅
+14. Kaldığı yerden devam: kayıt/geri yükleme + bozuk kayıt güvenliği — ✅
+15. Müfredat biçimi: 5 gün × 6 bölüm, günde 55–65 dakika, hedefler kolaydan zora, dört işlem de var — ✅
+16. Hedef metinleri çocuğun okuyabileceği biçimde ("Toplamı 5 olan 2 veya 3 taşı seç") — ✅
+
+Ayrıca `assembleDebug` + `assembleRelease` APK'ları emülatörde kurulup **gerçek oyun akışı**
+(bölüm açma, eşleştirme, joker, bölüm bitişi, ebeveyn paneli) adb ile oynanarak doğrulandı.

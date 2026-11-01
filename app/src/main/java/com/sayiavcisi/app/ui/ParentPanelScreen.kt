@@ -6,503 +6,822 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sayiavcisi.app.data.ParentStatsSnapshot
+import com.sayiavcisi.app.engine.CurriculumRepository
+import com.sayiavcisi.app.engine.ProgressRules
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
- * Ebeveyn Paneli (Bölüm 14):
- * - Hangi gün tamamlandı?
- * - Toplam kaç işlem yaptı?
- * - Toplam doğru sayısı & Yanlış cevap sayısı
- * - Toplama, Çıkarma, Çarpma, Bölme başarı oranları (%)
- * - En çok zorlandığı işlemler
- * - Çarpım tablosunda hangi sayılarda zorlandığı (0..10)
- * - Ortalama cevap süresi
- * - Günlük oyun süresi
- * - Ebeveyn, süre sınırını ve ses ayarlarını değiştirebilmeli.
+ * Ebeveyn Paneli: çocuğun cihaz içinde biriken gerçek ilerleme ve başarı verilerini gösteren,
+ * tüm değerleri [ParentStatsSnapshot] üzerinden okuyan salt-okunur rapor + ayar ekranı.
+ *
+ * Bölümler: özet kartları, gün gün ilerleme, işlem bazında başarı, en çok zorlanılan işlemler,
+ * çarpım tablosu dökümü, ayarlar (ses / süre modu / süre eklentisi) ve onaylı sıfırlama alanı.
+ * Veriler çevrimdışıdır; hiçbir şey cihazdan dışarı gitmez.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ParentPanelScreen(
-    stats: ParentStatsSnapshot,
+    snapshot: ParentStatsSnapshot,
     onToggleSound: (Boolean) -> Unit,
-    onToggleRelaxedMode: (Boolean) -> Unit,
-    onChangeExtraTime: (Int) -> Unit,
+    onToggleTimedMode: (Boolean) -> Unit,
+    onTimeExtension: (Int) -> Unit,
     onResetDailyScore: () -> Unit,
+    onResetAllProgress: () -> Unit,
     onBack: () -> Unit
 ) {
-    val scrollState = rememberScrollState()
-    val playMinutes = stats.dailyPlayTimeSeconds / 60
-    val playSeconds = stats.dailyPlayTimeSeconds % 60
-    val formattedAvgTime = String.format(Locale.US, "%.1f sn", stats.averageResponseTimeSeconds)
+    val p = GameVisuals.palette("lab")
+    var showDailyResetDialog by remember { mutableStateOf(false) }
+    var showAllResetDialog by remember { mutableStateOf(false) }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color(0xFF0F172A), Color(0xFF1E293B))
-                )
-            )
-            .verticalScroll(scrollState)
-            .padding(16.dp)
+            .background(GameVisuals.backgroundBrush(p))
     ) {
-        // Üst Başlık
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            TopBar(
+                accent = p.accentDeep,
+                onSurface = p.onSurface,
+                muted = p.muted,
+                onBack = onBack
+            )
+
+            SummaryRow(snapshot = snapshot)
+
+            SectionCard(title = "Gün gün ilerleme", p = p, delayMillis = 80) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    for (day in 1..CurriculumRepository.dayCount) {
+                        DayProgressRow(day = day, snapshot = snapshot, p = p)
+                    }
+                }
+            }
+
+            SectionCard(title = "İşlem bazında başarı", p = p, delayMillis = 120) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OperationRow(
+                        label = "Toplama",
+                        rate = snapshot.additionRate,
+                        correct = snapshot.additionCorrect,
+                        total = snapshot.additionTotal,
+                        color = GameVisuals.ok,
+                        p = p
+                    )
+                    OperationRow(
+                        label = "Çıkarma",
+                        rate = snapshot.subtractionRate,
+                        correct = snapshot.subtractionCorrect,
+                        total = snapshot.subtractionTotal,
+                        color = GameVisuals.gem,
+                        p = p
+                    )
+                    OperationRow(
+                        label = "Çarpma",
+                        rate = snapshot.multiplicationRate,
+                        correct = snapshot.multiplicationCorrect,
+                        total = snapshot.multiplicationTotal,
+                        color = GameVisuals.gold,
+                        p = p
+                    )
+                    OperationRow(
+                        label = "Bölme",
+                        rate = snapshot.divisionRate,
+                        correct = snapshot.divisionCorrect,
+                        total = snapshot.divisionTotal,
+                        color = p.accentDeep,
+                        p = p
+                    )
+                }
+            }
+
+            SectionCard(title = "En çok zorlanılan işlemler", p = p, delayMillis = 160) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Zorlanılan işlemler tekrar için işaretlenir, puandan düşülmez.",
+                        color = p.muted,
+                        fontSize = 12.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (snapshot.hardestOperations.isEmpty()) {
+                        Text(
+                            text = "Şimdilik zorlanılan işlem görünmüyor 👏",
+                            color = p.onSurface,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 6.dp)
+                        )
+                    } else {
+                        snapshot.hardestOperations.forEach { (label, count) ->
+                            HardOperationRow(label = label, count = count, p = p)
+                        }
+                    }
+                }
+            }
+
+            SectionCard(title = "Çarpım tablosu dökümü", p = p, delayMillis = 200) {
+                MultiplicationStruggleGrid(map = snapshot.multiplicationStruggleByNumber, p = p)
+            }
+
+            SectionCard(title = "Ayarlar", p = p, delayMillis = 240) {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    SettingSwitchRow(
+                        title = "Ses efektleri",
+                        subtitle = "Doğru/yanlış ve ödül sesleri",
+                        checked = snapshot.soundEnabled,
+                        onCheckedChange = { onToggleSound(it) },
+                        p = p
+                    )
+                    SettingSwitchRow(
+                        title = "Süreye karşı mod",
+                        subtitle = "Kapalıyken rahat süreler, çocuk acele ettirilmez",
+                        checked = !snapshot.relaxedUntimedMode,
+                        onCheckedChange = { onToggleTimedMode(it) },
+                        p = p
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Süre eklentisi",
+                            color = p.onSurface,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "Süre yalnızca rehberdir; geç veya yanlış cevap puandan asla düşmez.",
+                            color = p.muted,
+                            fontSize = 12.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        TimeExtensionChips(
+                            currentSeconds = snapshot.customTimeAdditionSeconds,
+                            onSelect = { onTimeExtension(it) },
+                            p = p
+                        )
+                    }
+                }
+            }
+
+            DangerZone(
+                p = p,
+                onRequestDailyReset = { showDailyResetDialog = true },
+                onRequestAllReset = { showAllResetDialog = true }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+
+    if (showDailyResetDialog) {
+        ConfirmDialog(
+            title = "Bugünlük puanı sıfırla",
+            message = "Bugünkü puan sayacı sıfırlanacak. Yarın 100 puan hakkı yeniden başlar.",
+            confirmLabel = "Sıfırla",
+            confirmColor = GameVisuals.danger,
+            p = p,
+            onConfirm = {
+                showDailyResetDialog = false
+                onResetDailyScore()
+            },
+            onDismiss = { showDailyResetDialog = false }
+        )
+    }
+
+    if (showAllResetDialog) {
+        ConfirmDialog(
+            title = "Tüm ilerlemeyi sıfırla",
+            message = "Tamamlanan bölümler, puanlar ve tüm istatistikler silinir. Bu geri alınamaz.",
+            confirmLabel = "Her şeyi sil",
+            confirmColor = GameVisuals.danger,
+            p = p,
+            onConfirm = {
+                showAllResetDialog = false
+                onResetAllProgress()
+            },
+            onDismiss = { showAllResetDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun TopBar(
+    accent: Color,
+    onSurface: Color,
+    muted: Color,
+    onBack: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .size(44.dp)
+                .background(accent, CircleShape)
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Geri",
+                tint = Color.White
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Ebeveyn Paneli",
+                color = onSurface,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "Her şey bu cihazda kalır; hiçbir veri internete gitmez.",
+                color = muted,
+                fontSize = 12.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun SummaryRow(snapshot: ParentStatsSnapshot) {
+    val minutes = (snapshot.dailyPlayTimeSeconds / 60L).toInt()
+    // Dört kart tek satıra sığmıyor (metin kısalıyordu): 2x2 ızgara.
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            SummaryTile(
+                value = "${snapshot.dailyScore}/${ParentStatsSnapshot.DAILY_CAP}",
+                caption = "bugünkü puan",
+                note = "günlük tavan ${ParentStatsSnapshot.DAILY_CAP}",
+                modifier = Modifier
+                    .weight(1f)
+                    .popIn(0)
+            )
+            SummaryTile(
+                value = "${snapshot.totalOperations}",
+                caption = "toplam işlem",
+                note = "doğru ${snapshot.totalCorrect} · yanlış ${snapshot.totalWrong}",
+                modifier = Modifier
+                    .weight(1f)
+                    .popIn(60)
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            SummaryTile(
+                value = "${successPercent(snapshot)}%",
+                caption = "isabet",
+                note = "genel doğruluk",
+                modifier = Modifier
+                    .weight(1f)
+                    .popIn(120)
+            )
+            SummaryTile(
+                value = "${minutes} dk",
+                caption = "günlük süre",
+                note = "ort. tepki ${formatSeconds(snapshot.averageResponseTimeSeconds)}",
+                modifier = Modifier
+                    .weight(1f)
+                    .popIn(180)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SummaryTile(
+    value: String,
+    caption: String,
+    note: String,
+    modifier: Modifier = Modifier
+) {
+    val p = GameVisuals.palette("lab")
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(18.dp),
+        color = p.surface,
+        contentColor = p.onSurface,
+        shadowElevation = 3.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = value,
+                color = p.accentDeep,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = caption,
+                color = p.onSurface,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = note,
+                color = p.muted,
+                fontSize = 9.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun DayProgressRow(day: Int, snapshot: ParentStatsSnapshot, p: WorldPalette) {
+    val levels = CurriculumRepository.levelsForDay(day)
+    val done = levels.count { snapshot.completedLevelIds.contains(it.levelId) }
+    val total = levels.size
+    val progress = ProgressRules.dayProgress(day, snapshot.completedLevelIds)
+    val completed = CurriculumRepository.isDayCompleted(day, snapshot.completedLevelIds)
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = p.surface,
+        contentColor = p.onSurface,
+        shadowElevation = 2.dp
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "👨‍👩‍👧 EBEVEYN PANELİ",
-                    color = Color(0xFFFBBF24),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black
+                    text = "$day. Gün · ${CurriculumRepository.dayTitles[day] ?: ""}",
+                    color = p.onSurface,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "Detaylı Öğrenme Analizi ve Oyun Ayarları",
-                    color = Color(0xFF94A3B8),
-                    fontSize = 12.sp
+                    text = "$done/$total bölüm · ${CurriculumRepository.dayMinutes(day)} dk",
+                    color = p.muted,
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(
-                onClick = onBack,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("← Oyuna Dön", color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // 1. 5 Günlük Eğitim Programı Tamamlanma Durumu
-        SectionCard(title = "📅 5 Günlük Macera İlerlemesi") {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                for (day in 1..5) {
-                    val isDone = stats.completedDays.contains(day)
-                    val stagesDone = (1..6).count { s -> stats.completedLevelIds.contains("D${day}_S${s}") }
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                if (completed) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Box(
                         modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (isDone) Color(0xFF065F46) else Color(0xFF1E293B))
-                            .border(
-                                1.dp,
-                                if (isDone) Color(0xFF34D399) else Color(0xFF475569),
-                                RoundedCornerShape(12.dp)
-                            )
-                            .padding(horizontal = 4.dp, vertical = 8.dp)
+                            .background(GameVisuals.ok, RoundedCornerShape(50))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = if (isDone) "✅" else "⏳",
-                            fontSize = 16.sp
-                        )
-                        Text(
-                            text = "$day. Gün",
+                            text = "Tamamlandı ✓",
                             color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "$stagesDone/6 B.",
-                            color = Color(0xFFCBD5E1),
                             fontSize = 10.sp,
-                            textAlign = TextAlign.Center
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
             }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // 2. Genel İşlem, Doğru/Yanlış ve Süre Özeti
-        SectionCard(title = "📊 Genel Performans ve Süre") {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                MetricBox(
-                    label = "Toplam İşlem",
-                    value = "${stats.totalOperations}",
-                    color = Color(0xFF38BDF8),
-                    modifier = Modifier.weight(1f)
-                )
-                MetricBox(
-                    label = "Doğru Sayısı",
-                    value = "${stats.totalCorrect}",
-                    color = Color(0xFF34D399),
-                    modifier = Modifier.weight(1f)
-                )
-                MetricBox(
-                    label = "Yanlış Sayısı",
-                    value = "${stats.totalWrong}",
-                    color = Color(0xFFF87171),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                MetricBox(
-                    label = "Ort. Cevap Süresi",
-                    value = formattedAvgTime,
-                    color = Color(0xFFFBBF24),
-                    modifier = Modifier.weight(1f)
-                )
-                MetricBox(
-                    label = "Günlük Oyun Süresi",
-                    value = "${playMinutes} dk ${playSeconds} sn",
-                    color = Color(0xFFA78BFA),
-                    modifier = Modifier.weight(1f)
-                )
-                MetricBox(
-                    label = "Günlük Puan",
-                    value = "${stats.dailyScore} / 100",
-                    color = Color(0xFFF472B6),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // 3. Dört İşlem Başarı Oranları
-        SectionCard(title = "🎯 İşlem Türlerine Göre Başarı Oranları") {
-            SkillRateBar(
-                title = "Toplama Başarı Oranı (+)",
-                rate = stats.additionRate,
-                detail = noDataTextOr(stats.additionTotal) { "${stats.additionCorrect} / ${stats.additionTotal} doğru" },
-                barColor = Color(0xFF10B981)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            SkillRateBar(
-                title = "Çıkarma Başarı Oranı (-)",
-                rate = stats.subtractionRate,
-                detail = noDataTextOr(stats.subtractionTotal) { "${stats.subtractionCorrect} / ${stats.subtractionTotal} doğru" },
-                barColor = Color(0xFFF59E0B)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            SkillRateBar(
-                title = "Çarpma Başarı Oranı (×)",
-                rate = stats.multiplicationRate,
-                detail = noDataTextOr(stats.multiplicationTotal) { "${stats.multiplicationCorrect} / ${stats.multiplicationTotal} doğru" },
-                barColor = Color(0xFF8B5CF6)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            SkillRateBar(
-                title = "Bölme Başarı Oranı (÷)",
-                rate = stats.divisionRate,
-                detail = noDataTextOr(stats.divisionTotal) { "${stats.divisionCorrect} / ${stats.divisionTotal} doğru" },
-                barColor = Color(0xFF06B6D4)
+            Spacer(modifier = Modifier.width(10.dp))
+            ProgressRing(
+                progress = progress,
+                color = if (completed) GameVisuals.ok else p.accent,
+                trackColor = p.tileFaceBottom,
+                modifier = Modifier.size(48.dp),
+                strokeWidth = 6.dp,
+                label = "${(progress * 100f).roundToInt()}%"
             )
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // 4. En Çok Zorlandığı İşlemler ve Çarpım Tablosu Zorluk Analizi
-        SectionCard(title = "🔍 Zorlanılan İşlemler ve Çarpım Tablosu Analizi") {
+@Composable
+private fun OperationRow(
+    label: String,
+    rate: Int,
+    correct: Int,
+    total: Int,
+    color: Color,
+    p: WorldPalette
+) {
+    val hasData = snapshotHasData(total)
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = "En Çok Zorlandığı İşlemler:",
-                color = Color(0xFFE2E8F0),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
+                text = label,
+                color = p.onSurface,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            if (stats.hardestOperations.isEmpty()) {
+            Text(
+                text = if (hasData) "$correct/$total · %$rate" else "henüz veri yok",
+                color = if (hasData) p.onSurface else p.muted,
+                fontSize = 12.sp,
+                fontWeight = if (hasData) FontWeight.Bold else FontWeight.Normal,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        BarTrack(fraction = if (hasData) rate / 100f else 0f, color = color, p = p)
+    }
+}
+
+@Composable
+private fun BarTrack(fraction: Float, color: Color, p: WorldPalette) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(12.dp)
+            .background(p.tileFaceBottom, RoundedCornerShape(50))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                .background(color, RoundedCornerShape(50))
+        )
+    }
+}
+
+@Composable
+private fun HardOperationRow(label: String, count: Int, p: WorldPalette) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = p.surface.copy(alpha = 0.6f),
+        contentColor = p.onSurface
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = label,
+                color = p.onSurface,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .background(GameVisuals.danger, RoundedCornerShape(50))
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+            ) {
                 Text(
-                    text = "Henüz zorlanılan bir işlem kaydedilmedi. Harika gidiyor! 🌟",
-                    color = Color(0xFF94A3B8),
-                    fontSize = 12.sp
+                    text = "×$count",
+                    color = Color.White,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
                 )
-            } else {
-                stats.hardestOperations.forEach { (opName, count) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(text = "• $opName", color = Color.White, fontSize = 12.sp)
-                        Text(
-                            text = "$count kez hata",
-                            color = Color(0xFFFCA5A5),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = "Çarpım Tablosunda Zorlanılan Sayılar (0 - 10):",
-                color = Color(0xFFE2E8F0),
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                for (num in 0..10) {
-                    val errors = stats.multiplicationStruggleByNumber[num] ?: 0
-                    val chipColor = when {
-                        errors == 0 -> Color(0xFF065F46)
-                        errors in 1..2 -> Color(0xFF92400E)
-                        else -> Color(0xFF991B1B)
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(chipColor)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            text = "$num'lar: ${if (errors == 0) "Sorunsuz" else "$errors hata"}",
-                            color = Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // 5. Ebeveyn Kontrolü: Süre Sınırı ve Ses Ayarları
-        SectionCard(title = "⚙️ Ebeveyn Ayarları (Süre Sınırı ve Ses)") {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Oyun Ses Efektleri ve Müzik",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Doğru/yanlış sesleri ve kutlama melodileri",
-                        color = Color(0xFF94A3B8),
-                        fontSize = 11.sp
-                    )
-                }
-                Switch(
-                    checked = stats.soundEnabled,
-                    onCheckedChange = onToggleSound,
-                    colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF10B981))
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Rahat Oyun Modu (Süre Sınırı Olmadan)",
-                        color = Color.White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Orta/Zor/Uzman seviyelerdeki geri sayımı kapatır, stresi önler",
-                        color = Color(0xFF94A3B8),
-                        fontSize = 11.sp
-                    )
-                }
-                Switch(
-                    checked = stats.relaxedUntimedMode,
-                    onCheckedChange = onToggleRelaxedMode,
-                    colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF38BDF8))
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = "Süreli Seviyeler İçin Ek Süre Ayarı: ${if (stats.customTimeAdditionSeconds >= 0) "+${stats.customTimeAdditionSeconds}" else "${stats.customTimeAdditionSeconds}"} sn",
-                color = Color.White,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Standart Süreler: Orta 90 sn • Zor 60 sn • Uzman 45 sn",
-                color = Color(0xFF94A3B8),
-                fontSize = 11.sp
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                listOf(-15, 0, 15, 30, 60).forEach { extra ->
-                    val isSelected = stats.customTimeAdditionSeconds == extra
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (isSelected) Color(0xFF2563EB) else Color(0xFF334155))
-                            .clickable { onChangeExtraTime(extra) }
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            text = when {
-                                extra == 0 -> "Standart (+0 sn)"
-                                extra > 0 -> "+$extra sn Ek Süre"
-                                else -> "$extra sn Daha Kısa"
-                            },
-                            color = Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Button(
-                onClick = onResetDailyScore,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF475569)),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Text("Günlük Puanı Şimdi Sıfırla (yeni günde otomatik sıfırlanır)", color = Color.White, fontSize = 12.sp)
             }
         }
     }
+}
+
+@Composable
+private fun MultiplicationStruggleGrid(map: Map<Int, Int>, p: WorldPalette) {
+    val maxFreq = map.values.maxOrNull() ?: 0
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            for (n in 0..10) {
+                val freq = map[n] ?: 0
+                val t = if (maxFreq <= 0) 0f else freq.toFloat() / maxFreq.toFloat()
+                val cellColor = if (freq <= 0) p.tileFaceBottom else lerpColor(GameVisuals.ok, GameVisuals.danger, t)
+                val textColor = if (freq <= 0) p.onSurface else if (t > 0.55f) Color.White else p.onSurface
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(40.dp)
+                        .background(cellColor, RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$n",
+                        color = textColor,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            LegendDot(color = p.tileFaceBottom)
+            Text("bilgi yok", color = p.muted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            LegendDot(color = GameVisuals.ok)
+            Text("az hata", color = p.muted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            LegendDot(color = GameVisuals.gold)
+            Text("orta", color = p.muted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            LegendDot(color = GameVisuals.danger)
+            Text(
+                "çok hata",
+                color = p.muted,
+                fontSize = 11.sp,
+                modifier = Modifier.weight(1f, false),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun LegendDot(color: Color) {
+    Box(
+        modifier = Modifier
+            .size(10.dp)
+            .background(color, CircleShape)
+    )
+}
+
+@Composable
+private fun SettingSwitchRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    p: WorldPalette
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                color = p.onSurface,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = subtitle,
+                color = p.muted,
+                fontSize = 11.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+@Composable
+private fun TimeExtensionChips(currentSeconds: Int, onSelect: (Int) -> Unit, p: WorldPalette) {
+    val options = listOf(-15, 0, 30, 60)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        options.forEach { seconds ->
+            val selected = seconds == currentSeconds
+            val label = when (seconds) {
+                0 -> "Normal"
+                -15 -> "−15 sn"
+                else -> "+$seconds sn"
+            }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .widthIn(min = 0.dp)
+                    .background(if (selected) p.accentDeep else p.surface, RoundedCornerShape(50))
+                    .border(
+                        width = 1.dp,
+                        color = if (selected) p.accentDeep else p.muted.copy(alpha = 0.4f),
+                        shape = RoundedCornerShape(50)
+                    )
+                    .clickable { onSelect(seconds) }
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = label,
+                    color = if (selected) Color.White else p.onSurface,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DangerZone(
+    p: WorldPalette,
+    onRequestDailyReset: () -> Unit,
+    onRequestAllReset: () -> Unit
+) {
+    SectionCard(title = "Sıfırlama", p = p, delayMillis = 280) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                text = "Bu işlemler kaydedilmiş ilerlemeyi siler; onay istenir.",
+                color = p.muted,
+                fontSize = 12.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Button(
+                onClick = onRequestDailyReset,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = GameVisuals.gold,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "Bugünlük puanı sıfırla",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Button(
+                onClick = onRequestAllReset,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = GameVisuals.danger,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "Tüm ilerlemeyi sıfırla",
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConfirmDialog(
+    title: String,
+    message: String,
+    confirmLabel: String,
+    confirmColor: Color,
+    p: WorldPalette,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = p.surface,
+        titleContentColor = p.onSurface,
+        textContentColor = p.muted,
+        title = {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        },
+        text = { Text(text = message) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text(text = confirmLabel, color = confirmColor, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = "Vazgeç", color = p.muted)
+            }
+        }
+    )
 }
 
 @Composable
 private fun SectionCard(
     title: String,
+    p: WorldPalette,
+    delayMillis: Int = 0,
     content: @Composable () -> Unit
 ) {
-    Column(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF1E293B).copy(alpha = 0.9f))
-            .border(1.dp, Color(0xFF334155), RoundedCornerShape(16.dp))
-            .padding(14.dp)
+            .popIn(delayMillis),
+        shape = RoundedCornerShape(20.dp),
+        color = p.surface,
+        contentColor = p.onSurface,
+        shadowElevation = 3.dp
     ) {
-        Text(
-            text = title,
-            color = Color(0xFFFBBF24),
-            fontSize = 14.sp,
-            fontWeight = FontWeight.ExtraBold
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        content()
-    }
-}
-
-@Composable
-private fun MetricBox(
-    label: String,
-    value: String,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF0F172A))
-            .border(1.dp, color.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-            .padding(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = value,
-            color = color,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Black,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = label,
-            color = Color(0xFFCBD5E1),
-            fontSize = 10.sp,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-/** Ebeveyn panelinde veri olmayan işlem türü "yüzde 100 başarılı" gibi gösterilmez. */
-private fun noDataTextOr(total: Int, filledText: () -> String): String =
-    if (total <= 0) "Henüz deneme yok" else filledText()
-
-@Composable
-private fun SkillRateBar(
-    title: String,
-    rate: Int,
-    detail: String,
-    barColor: Color
-) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+        Column(
+            modifier = Modifier.padding(PaddingValues(16.dp)),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(text = title, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            Text(text = "%$rate ($detail)", color = barColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = title,
+                color = p.onSurface,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            content()
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        LinearProgressIndicator(
-            progress = { (rate / 100f).coerceIn(0f, 1f) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(CircleShape),
-            color = barColor,
-            trackColor = Color(0xFF0F172A)
-        )
     }
+}
+
+private fun successPercent(snapshot: ParentStatsSnapshot): Int =
+    snapshot.successRatePercent(snapshot.totalCorrect, snapshot.totalOperations)
+
+private fun snapshotHasData(total: Int): Boolean = total > 0
+
+private fun formatSeconds(seconds: Float): String =
+    String.format(Locale.US, "%.1f", seconds).replace('.', ',') + " sn"
+
+private fun lerpColor(from: Color, to: Color, fraction: Float): Color {
+    val t = fraction.coerceIn(0f, 1f)
+    return Color(
+        red = from.red + (to.red - from.red) * t,
+        green = from.green + (to.green - from.green) * t,
+        blue = from.blue + (to.blue - from.blue) * t,
+        alpha = from.alpha + (to.alpha - from.alpha) * t
+    )
 }

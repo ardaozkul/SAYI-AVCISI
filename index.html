@@ -299,11 +299,13 @@
     <!-- HERO -->
     <section class="hero">
         <div class="hero-mascot">🦊🧭</div>
-        <div><span class="badge-pill">✨ 3. Sınıf Seviyesi • %100 Çevrimdışı (Offline) • Garantili Çözülebilir Tahtalar</span></div>
+        <div><span class="badge-pill">✨ v2.0.0 • 3. Sınıf Seviyesi • %100 Çevrimdışı • Eşleşmeyen Blok Bırakmayan Tahtalar</span></div>
         <h1>SAYI <span>AVCISI</span></h1>
         <p class="hero-sub">
-            Çocukların toplama, çıkarma, çarpma ve bölme işlemlerini klasik testler yerine Sudoku benzeri dinamik sayı tablolarında
-            blokları eşleştirerek ve patlatarak öğrendiği 5 günlük eğitici Android bulmaca macerası!
+            Her bölümde <strong>tek bir hedef</strong> var: "Toplamı 7", "Farkı 4", "Çarpımı 24", "Bölümü 5".
+            Çocuk sayı bloklarını yatay, dikey, çapraz veya serbest olarak eşleştirip avlar; sıra önemli değildir,
+            tahtadaki <strong>her</strong> grup hedefi sağlar ve bölüm sonunda <strong>eşleşmeyen tek bir blok kalmaz</strong>.
+            5 gün × 6 bölüm, günde ~60 dakika, toplama → çıkarma → çarpma → bölme → 10×10 büyük final.
         </p>
 
         <div class="cta-group">
@@ -329,66 +331,72 @@
     <!-- OYUN İÇİ GÖRÜNTÜLER -->
     <h2 class="section-title">📸 Oyun İçinden Gerçek Kareler</h2>
     <p style="color:#cbd5e1; margin-bottom:16px;">
-        Aşağıdaki ekran görüntüleri Android emülatöründe (Pixel 5 • Android 14) kurulu <strong>APK</strong> içinden
-        <code>adb screencap</code> ile gerçek olarak alınmıştır. Görüntülerin tamamı
+        Aşağıdaki ekran görüntüleri Android emülatöründe kurulu <strong>2.0.0 APK</strong> içinden
+        <code>adb screencap</code> ile gerçek olarak alındı; bölümleri <code>tools/capture-screenshots.mjs</code>
+        (adb + uiautomator) gerçekten oynayarak üretti. Görüntülerin tamamı
         <a href="https://github.com/ardaozkul/SAYI-AVCISI/tree/main/docs/screenshots" style="color:var(--cyan);">docs/screenshots</a>
         klasöründedir.
     </p>
     <div class="shot-grid">
         <figure class="shot-card">
-            <img src="docs/screenshots/01-macera-haritasi.png" alt="SAYI AVCISI 5 günlük macera haritası ekranı" loading="lazy" />
-            <figcaption>🗺️ Macera Haritası</figcaption>
-            <small>5 gün, 30 bölüm, günlük 60 dakikalık program</small>
+            <img src="docs/screenshots/01-giris-ekrani.png" alt="SAYI AVCISI giriş ekranı: günlük puan, altın, elmas ve başlama düğmeleri" loading="lazy" />
+            <figcaption>Giriş Ekranı 🦊</figcaption>
+            <small>Günlük puan sayacı, altın/elmas kasası ve ebeveyn girişi</small>
         </figure>
         <figure class="shot-card">
-            <img src="docs/screenshots/02-macera-haritasi-2-gun.png" alt="Hazine Mağarası 2. gün sekmesi" loading="lazy" />
-            <figcaption>💎 2. Gün: Hazine Mağarası</figcaption>
-            <small>10–20 toplama, çıkarma ve üç sayılı işlemler</small>
+            <img src="docs/screenshots/02-macera-haritasi.png" alt="5 günlük macera haritası, gün kartları ve bölüm çipleri" loading="lazy" />
+            <figcaption>Macera Haritası 🗺️</figcaption>
+            <small>5 gün kartı, ilerleme halkaları ve kilit açma sırası</small>
         </figure>
         <figure class="shot-card">
-            <img src="docs/screenshots/03-oyun-tahtasi-toplama.png" alt="5x5 toplama oyun tahtası" loading="lazy" />
-            <figcaption>🎯 5×5 Toplama Tahtası</figcaption>
-            <small>HEDEF göstergesi, kalan blok ve seçilen sayı sayacı</small>
+            <img src="docs/screenshots/03-oyun-tahtasi-toplama.png" alt="1. gün 4x4 toplama tahtası ve hedef kartı" loading="lazy" />
+            <figcaption>1. Gün: Toplamı 1 (4×4) 🌳</figcaption>
+            <small>Hedef kartı, işlem, tahta boyutu ve kural adı ekranda</small>
         </figure>
         <figure class="shot-card">
-            <img src="docs/screenshots/04-oyun-eslesme-animasyonu.png" alt="Doğru eşleştirme sonrası animasyon" loading="lazy" />
-            <figcaption>✨ Eşleşme ve Ödül Anı</figcaption>
-            <small>Bloklar patlar, kaşif tilki puanı ve seriyi duyurur</small>
+            <img src="docs/screenshots/04-eslesme-sonrasi.png" alt="Eşleşme sonrası temizlenen taşlar ve uçan puan" loading="lazy" />
+            <figcaption>Eşleşme Sonrası ✨</figcaption>
+            <small>Patlayan bloklar, uçan puan, seri ve ilerleme yüzdesi</small>
         </figure>
         <figure class="shot-card">
-            <img src="docs/screenshots/05-oyun-tahtasi-carpma.png" alt="Çarpım Kalemi 6x6 çarpma tahtası" loading="lazy" />
-            <figcaption>🏰 Çarpım Kalesi</figcaption>
-            <small>Çarpım tablosu ve eksik çarpan (? × 4 = 20) soruları</small>
+            <img src="docs/screenshots/05-bolum-bitti-kutlama.png" alt="Bölüm tamamlandı konfeti ve ödül ekranı" loading="lazy" />
+            <figcaption>Bölüm Bitti 🎉</figcaption>
+            <small>Konfeti, puan, altın/elmas ödülü ve sonraki bölüm</small>
         </figure>
         <figure class="shot-card">
-            <img src="docs/screenshots/06-oyun-uzman-tahtasi.png" alt="10x10 uzman oyun tahtası" loading="lazy" />
-            <figcaption>🏝️ 10×10 Uzman Tahtası</figcaption>
-            <small>Büyük final: karışık dört işlem, 45 saniye süre</small>
+            <img src="docs/screenshots/06-oyun-tahtasi-cikarma.png" alt="2. gün çıkarma tahtası hazine magarasi teması" loading="lazy" />
+            <figcaption>2. Gün: Farkı 2 ⛏️</figcaption>
+            <small>Hazine Mağarası paleti, çıkarma hedefi</small>
         </figure>
         <figure class="shot-card">
-            <img src="docs/screenshots/07-bolum-tamamlandi.png" alt="Bölüm tamamlandı kutlama ekranı" loading="lazy" />
-            <figcaption>🎉 Bölüm Tamamlandı</figcaption>
-            <small>Konfeti, altın/elmas ödülü ve sonraki bölüme geçiş</small>
+            <img src="docs/screenshots/07-oyun-tahtasi-carpma.png" alt="3. gün çarpma tahtası carpim kalemesi teması" loading="lazy" />
+            <figcaption>3. Gün: Çarpımı 6 🏰</figcaption>
+            <small>Çarpım tablosu alıştırması, 4×4 kale tahtası</small>
         </figure>
         <figure class="shot-card">
-            <img src="docs/screenshots/08-ozel-toplama-laboratuvari.png" alt="Özel toplama laboratuvarı ekranı" loading="lazy" />
-            <figcaption>🧪 Özel Toplama Laboratuvarı</figcaption>
-            <small>1'den 100'e hedef, tahta boyutu ve kural seçimi</small>
+            <img src="docs/screenshots/08-oyun-tahtasi-bolme.png" alt="4. gün bölme tahtasi bolme uzayi teması" loading="lazy" />
+            <figcaption>4. Gün: Bölümü 2 🚀</figcaption>
+            <small>Kalansız bölme; sıfıra bölme hiçbir bölümde yok</small>
         </figure>
         <figure class="shot-card">
-            <img src="docs/screenshots/09-ozel-toplama-laboratuvari-secenekler.png" alt="Özel toplama laboratuvarı boyut ve kural seçenekleri" loading="lazy" />
-            <figcaption>🎲 Laboratuvar Seçenekleri</figcaption>
-            <small>Ayrı bir oyun kuralı olarak satır/sütun sınırı yok</small>
+            <img src="docs/screenshots/09-buyuk-final-10x10.png" alt="10x10 büyük final tahtası toplamı 30" loading="lazy" />
+            <figcaption>10×10 Büyük Final 🏝️</figcaption>
+            <small>100 blok, ~15 dakikalık mesai, hedefi 30</small>
         </figure>
         <figure class="shot-card">
-            <img src="docs/screenshots/10-ebeveyn-paneli.png" alt="Ebeveyn paneli genel durum ekranı" loading="lazy" />
-            <figcaption>👨‍👩‍ Ebeveyn Paneli</figcaption>
-            <small>Günlük puan, altın/elmas ve işlem sayıları</small>
+            <img src="docs/screenshots/10-serbest-mod-tahtasi.png" alt="Serbest mod tahtasi yon ve mesafe siniri yok" loading="lazy" />
+            <figcaption>Serbest Mod 🎯</figcaption>
+            <small>Yön ve mesafe aranmaz: tahtadaki herhangi iki/üç taş</small>
         </figure>
         <figure class="shot-card">
-            <img src="docs/screenshots/11-ebeveyn-paneli-analiz.png" alt="İşlem türlerine göre başarı oranları ve analiz" loading="lazy" />
-            <figcaption>📊 Başarı ve Zorlanma Analizi</figcaption>
-            <small>Dört işlem oranları, çarpım tablosu zorluk haritası</small>
+            <img src="docs/screenshots/11-ebeveyn-paneli.png" alt="Ebeveyn paneli gunluk puan ve gun gun ilerleme" loading="lazy" />
+            <figcaption>Ebeveyn Paneli 👪</figcaption>
+            <small>Günlük puan (x/100), işlem sayısı, gün gün ilerleme</small>
+        </figure>
+        <figure class="shot-card">
+            <img src="docs/screenshots/12-ebeveyn-paneli-analiz.png" alt="Işlem bazinda başarı ve carpim tablosu zorlanma analizi" loading="lazy" />
+            <figcaption>Başarı ve Zorlanma Analizi 📊</figcaption>
+            <small>Dört işlem oranları, çarpım tablosu 0–10 ısı haritası</small>
         </figure>
     </div>
 
@@ -411,41 +419,42 @@
     </div>
 
     <!-- YENİLİKLER -->
-    <h2 class="section-title">🆕 1.1.0 Sürüm Yenilikleri</h2>
+    <h2 class="section-title">🆕 2.0.0 — Motor Baştan Yazıldı</h2>
     <ul class="news-list">
-        <li>🔊 Ses efektleri gerçekten çalar (AudioTrack akış moduna geçirildi) — doğru, yanlış, bonus ve fanfare.</li>
-        <li>📌 Kaldığı yerden devam: yarım kalan tahta, jokerler ve seri cihazda saklanır; uygulama kapanıp açılınca aynı tahtaya döner.</li>
-        <li>🛡️ ALTIN KURTARMA artık yalnızca jokerler tükenince (veya çocuk takılı kalınca) devreye girer; puan kaybı yok.</li>
-        <li>⬅️ Android geri tuşu uygulamayı kapatmadan macera haritasına döner.</li>
-        <li>➖ Geometrik hatalı seçimler de -1 puan ve hata olarak kaydedilir; süre bonusu yalnızca süreli bölümlerde.</li>
-        <li>📅 Günlük 100 puan tavanı ve günlük süre gerçek takvim gününe göre otomatik sıfırlanır.</li>
-        <li>♿ Sayı blokları ve joker düğmeleri ekran okuyucu etiketli, dokunma alanları büyütüldü.</li>
-        <li>📐 Dar ekranda yerleşim düzeltmeleri: 5 günlük ilerleme kutuları eşit paylaşır, "Ebeveyn" düğmesi satıra kırılmaz, tilki mesajı kesilmez.</li>
-        <li>✅ Otomatik kalite kontrol testleri 14 doğrulama senaryosuna (15 kriter) çıkarıldı.</li>
+        <li>🎯 <strong>Tek hedef kuralı:</strong> her bölümde tek bir hedef vardır (Toplamı 7 / Farkı 4 / Çarpımı 24 / Bölümü 5) ve tahtadaki <strong>her</strong> blok grubu o hedefi sağlar. 1.x'teki "bazen kabul ediyor bazen etmiyor" sorunu kökten bitti.</li>
+        <li>🔁 <strong>Sıra artık önemli değil:</strong> çıkarma <code>|a−b|</code>, bölme her iki yönde de denenir. Hangi taşa önce dokunduğun fark etmez.</li>
+        <li>🧱 <strong>Eşleşmeyen blok bırakmayan tahta üretimi:</strong> ızgara baştan 2'li/3'lü bitişik gruplara bölünür; 30 bölüm × 3 tohum = 90 tahta testte sıfır kalan blokla kapanır.</li>
+        <li>🛟 <strong>Tıkanma imkânsız:</strong> geçerli hamle kalmayınca ALTIN KURTARMA (ücretsiz, puansız) kalan taşı yeniden dizer; şekil hiç bölünemiyorsa <strong>hesapta olmayan sihirli blok</strong> eklenir.</li>
+        <li>🟢 <strong>Sıfır gerçek bir sayı olarak oyunda:</strong> <code>0+1=1</code>, <code>5−5=0</code> (ikiz sayılar), <code>0×4=0</code>, <code>0÷7=0</code>; sıfıra bölme hiçbir bölümde üretilmez.</li>
+        <li>🎨 <strong>Yeni görsel dil:</strong> 5 dünya paleti (orman/mağara/kale/uzay/ada), pastel bloklar + koyu rakamlar, gecikmeli pop-in dalgası, seçim çizgisi, parçacık patlaması, uçan puan, konfeti, nabız sayaç.</li>
+        <li>📣 <strong>Bölümün amacını çocuk okur:</strong> hedef kartı kalıcı olarak üstte (HEDEF + cümle + işlem + tahta boyu + kural + yüzde halkası) ve bölüm başında "NASIL OYNANIR?" kartı örnek işlemle birlikte açılır.</li>
+        <li>🏆 <strong>Puanlama netleşti:</strong> doğru eşleşme +4…+7, üçlü +2, büyük tahta +1/+2, seri +0…+8, ⚡ çifte ×2; jokerler −5/−10/−5; günlük tavan 100 puan; yanlış hamle puan götürmez, sadece seriyi sıfırlar.</li>
+        <li>⏱️ <strong>Süreli/rahat mod gerçekten çalışır:</strong> süreli modda her bölüm kendi planlanan dakikası kadar sayaca sahiptir, ebeveynden −15…+60 sn eklenebilir; süre dolunca çocuk cezalandırılmaz, bölümü baştan oynar.</li>
+        <li>✅ <strong>22 otomatik motor testi</strong> (geometri, matematik, tam temizlik, tıkanmazlık, tavan, joker, kayıt) ve emülatörde oynanarak doğrulanmış gerçek akış.</li>
     </ul>
 
     <!-- 5 GÜNLÜK PROGRAM -->
-    <h2 class="section-title">🗺️ 5 Günlük Eğitim ve Macera Programı (Her Gün 60 Dakika)</h2>
+    <h2 class="section-title">🗺️ 5 Günlük Program — Günde ~60 Dakika, 30 Bölüm</h2>
     <div class="days-grid">
         <div class="day-box day-1">
-            <h4>🌲 1. GÜN: Sayıların Gücü</h4>
-            <p><strong>Sayı Ormanı:</strong> 0 ve 1 kavramı, 1–10 toplama, 1–10 çıkarma, iki sayılı eşleştirme, 4×4 ve 5×5 tablolar.</p>
+            <h4>🌲 1. GÜN: Sayı Ormanı</h4>
+            <p><strong>Toplama:</strong> hedef 1 → 2 → 5 → 7 → 10, gün sonunda <strong>serbest mod</strong> (yön/mesafe yok). 4×4'ten 6×6'ya, sıfır dahil.</p>
         </div>
         <div class="day-box day-2">
-            <h4>💎 2. GÜN: Onluk Avcısı</h4>
-            <p><strong>Hazine Mağarası:</strong> 10–20 toplama ve çıkarma, üç sayılı toplama, zincir çıkarma, 21–100 hedefleri, 5×5 ve 6×6 tablolar.</p>
+            <h4>💎 2. GÜN: Hazine Mağarası</h4>
+            <p><strong>Büyük toplama + çıkarma başlangıcı:</strong> 13, 16, 20 (8×8); sonra farkı 2, farkı 0 (ikiz sayılar) ve farkı 5.</p>
         </div>
         <div class="day-box day-3">
-            <h4>🏰 3. GÜN: Çarpım Ormanı</h4>
-            <p><strong>Çarpım Kalesi:</strong> Önce 0, 1, 2, 3, 4, 5, 10 çarpımları, ardından 6, 7, 8, 9 çarpımları, görsel gruplama ve <code>?×4=20</code> eksik çarpan bulma.</p>
+            <h4>🏰 3. GÜN: Çarpım Kalesi</h4>
+            <p><strong>Çıkarma ustalığı + çarpma:</strong> farkı 4, 7, 10 (8×8); ardından çarpımı 6, 12 ve 24.</p>
         </div>
         <div class="day-box day-4">
-            <h4>🚀 4. GÜN: Bölme Mağarası</h4>
-            <p><strong>Bölme Uzayı:</strong> Kalansız bölme (sıfıra bölme korumalı), çarpma-bölme ilişkisi, <code>20÷?=5</code> eksik bölen bulma, 6×6 ve 8×8 tablolar.</p>
+            <h4>🚀 4. GÜN: Bölme Uzayı</h4>
+            <p><strong>Çarpmanın tersi:</strong> çarpımı 36, bölümü 0 (sıfır gezegeni), 2, 5; çarpımı 48 (8×8) ve bölümü 6 (8×8). Kalansız bölme, sıfıra bölme yok.</p>
         </div>
         <div class="day-box day-5">
-            <h4>🏝️ 5. GÜN: Büyük Final</h4>
-            <p><strong>Matematik Adası:</strong> Dört işlem karışık bulmacalar, 8×8 ve 10×10 uzman oyun tahtaları ve Büyük Final Şampiyonluk Ödülü!</p>
+            <h4>🏝️ 5. GÜN: Matematik Adası</h4>
+            <p><strong>Büyük final:</strong> toplamı 25, farkı 15, çarpımı 54, bölümü 8 (süre baskısı), <strong>10×10 / 100 blok • ~15 dakika</strong> final ve serbest çarpım ödülü.</p>
         </div>
     </div>
 
@@ -453,33 +462,35 @@
     <h2 class="section-title">⚙️ Temel Oyun Mekanikleri ve Güvenlik Sistemleri</h2>
     <div class="grid-3">
         <div class="card">
-            <h3>🎯 Açık ve Tutarlı Eşleştirme</h3>
+            <h3>🎯 Tutarlı Eşleştirme Mantığı</h3>
             <ul>
-                <li>Yatay (sağa/sola), dikey (yukarı/aşağı) ve çapraz tüm yönlerde eşleştirme.</li>
-                <li>Ters yönde okuma ve aradaki bloklar temizlendikçe açılan uzak mesafe doğrusal eşleştirme.</li>
-                <li>Aralarında başka bir aktif sayı bulunan blokların yanlışlıkla eşleşmesini engelleyen net görüş hattı algoritması.</li>
-                <li>Ayrı oyun kuralı olarak sunulan <strong>Serbest Eşleştirme Modu</strong>.</li>
+                <li><strong>Bir bölüm = tek hedef.</strong> Tahtadaki bütün geçerli gruplar aynı hedefi üretir; hedef kartı ekranda kalıcı yazar (örn. "Toplamı 7 olan 2 veya 3 taşı seç").</li>
+                <li><strong>Doğrusal Avcı:</strong> yatay, dikey ve her iki çaprazda; yön ters olabilir (aşağıdan yukarıya, sağdan sola). Aradaki taş temizlenince arkadaki açılır.</li>
+                <li><strong>Serbest Avcı:</strong> 1. ve 5. günün final bölümlerinde yön ve mesafe aranmaz.</li>
+                <li>2'li ve 3'lü gruplar; üçlü seçim <strong>EŞLEŞTİR</strong> onayıyla oynanır, çarpma/bölüm bölümleri yalnız 2'lidir.</li>
+                <li>Sıra düşündürtmez: <code>9−4</code> ile <code>4−9</code>, <code>12÷4</code> ile <code>4÷12</code> aynı kabul.</li>
             </ul>
         </div>
 
         <div class="card">
-            <h3>🛡️ Garantili Çözüm & Altın Kurtarma</h3>
+            <h3>🛡️ Garantili Çözüm &amp; Altın Kurtarma</h3>
             <ul>
-                <li>4×4, 5×5, 6×6, 8×8 ve 10×10 tahtaların tamamı oyuna başlamadan önce matematiksel çözülebilirlik testinden geçer.</li>
-                <li>Bölüm sonunda eşleşmeyen tek bir sayı bloğu bile kalmaz.</li>
-                <li><strong>3 Joker:</strong> İpucu (-5p), Yeniden Düzenle (-10p), Çifte Hamle (-5p).</li>
-                <li><strong>Gizli 4. Sistem (ALTIN KURTARMA):</strong> 3 joker biter ve hamle kalmazsa çocuğa hissettirmeden ve puan düşürmeden tahtayı otomatik çözülebilir yapar!</li>
+                <li>Tahta <strong>tersine döşeme</strong> ile üretilir: önce 2'li/3'lü gruplar yerleştirilir, sonra her gruba hedefi sağlayan sayılar verilir. Bu yüzden <strong>eşleşmeyen tek blok bile kalmaz</strong>.</li>
+                <li>Her hamleden sonra motor geçerli hamle arar; kalmadıysa <strong>ALTIN KURTARMA</strong> devreye girer — bedava, puansız ve çocuğu cezalandırmadan tahtayı yeniden dizer.</li>
+                <li>Şekil gruplanamıyorsa tahtaya <strong>hesapta olmayan sihirli blok</strong> eklenir: 3 joker bittiğinde bile oyun bitmemiş sayılmaz.</li>
+                <li><strong>3 joker:</strong> 🔍 İpucu (−5), 🔄 Yeniden Düzenle (−10), ⚡ Çifte Hamle (−5). Joker puan götürür ama günlük tavanı etkilemez.</li>
+                <li>Yanlış/geometrisi bozuk seçim puan cezası vermez; yalnız seriyi sıfırlar ve ebeveyn analizine hata olarak işlenir.</li>
             </ul>
         </div>
 
         <div class="card">
-            <h3>👨‍👩‍👧 Ebeveyn Paneli & Puanlama</h3>
+            <h3>👨‍👩‍👧 Puanlama &amp; Ebeveyn Paneli</h3>
             <ul>
-                <li>Günlük maksimum <strong>100 puan</strong> tavanı ve 0 puan tabanı koruması.</li>
-                <li>Toplama, çıkarma, çarpma ve bölme başarı yüzdeleri.</li>
-                <li>En çok zorlanılan işlemler ve çarpım tablosu sayı analizi.</li>
-                <li>Ortalama cevap süresi, günlük oyun süresi takibi.</li>
-                <li>Süre sınırını (Süreli / Rahat Mod) ve ses ayarlarını değiştirme imkânı.</li>
+                <li>Taban puan: toplama 4, çıkarma 5, çarpma 6, bölme 7. Üçlü grup +2, 6–7'lik tahta +1, 8–10'luk tahta +2, üst üste doğru seri +0…+8, ⚡ ile ×2.</li>
+                <li>Günde <strong>en fazla 100 puan</strong> (brüt tavan); ekrandaki günlük puan = kazanılan − jokerlerde harcanan, 0'ın altına inmez. Takvim günü değişince kendiliğinden sıfırlanır.</li>
+                <li>Bölüm ödülü: altın = 10 + tahta boyu + aşama no; kusursuz bölümde elmas (kurtarma kullanılmamışsa 2, kullanılmışsa 1).</li>
+                <li>Ebeveyn paneli: işlem bazlı doğruluk çubukları, çarpım tablosu zorlanma ısısı, ortalama tepki süresi, gün gün ilerleme, toplam altın/elmas ve günlük oyun süresi.</li>
+                <li>Ayarlar: süreli/rahat mod, süreye −15…+60 sn, ses aç/kapat ve iki onaylı ilerleme sıfırlama.</li>
             </ul>
         </div>
     </div>

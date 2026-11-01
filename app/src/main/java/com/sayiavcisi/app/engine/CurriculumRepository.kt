@@ -1,559 +1,171 @@
 package com.sayiavcisi.app.engine
 
-import com.sayiavcisi.app.model.DailySegmentType
-import com.sayiavcisi.app.model.DifficultyTier
 import com.sayiavcisi.app.model.LevelSpec
 import com.sayiavcisi.app.model.MatchRuleMode
-import com.sayiavcisi.app.model.OperationType
-import com.sayiavcisi.app.model.QuestionFormat
-import com.sayiavcisi.app.model.ThemeWorld
+import com.sayiavcisi.app.model.RuleKind
 
 /**
- * 5 Günlük Macera ve Eğitim Programı + Özel Pratik Modu Katalogu.
+ * 2.0 müfredatı: 5 gün x 6 bölüm, her gün yaklaşık 60 dakika.
  *
- * Her gün 60 dakikalık eğitim planına uygun 6 aşamadan oluşur:
- * 1. Isınma (10 dk)
- * 2. 1. Ana Bulmaca (15 dk)
- * 3. Enerji Molası & Eğlenceli Mini Bulmaca (5 dk)
- * 4. 2. Ana Bulmaca (15 dk)
- * 5. Karışık İşlemler (10 dk)
- * 6. Değerlendirme ve Ödül (5 dk)
- *
- * Ayrıca Toplama Modu'ndaki tüm hedef aralıkları (1..10, 11-15, 16-20, 21-30, 31-50, 51-100)
- * hem 5 günlük akışta hem de Özel Seviye Seçici'de eksiksiz yer alır.
+ * Her bölümde TEK bir hedef vardır (Toplamı X / Farkı X / Çarpımı X / Bölümü X).
+ * Zorluk kolaydan zora: hedef 1'den başlar, 0'ı da içerir, 30+ hedeflere ve 10x10 tahtaya kadar yükselir.
+ * 5. günün 5. bölümü 10x10 tahtasıyla ~15 dakikalık büyük bir mesaidir.
  */
 object CurriculumRepository {
 
-    val allLevels: List<LevelSpec> = listOf(
-        // ==========================================
-        // 1. GÜN: SAYILARIN GÜCÜ (Sayı Ormanı)
-        // - 0 ve 1 kavramı, 1-10 toplama, 1-10 çıkarma, 2 sayılı eşleştirme, 4x4 ve 5x5 tablolar
-        // ==========================================
-        LevelSpec(
-            levelId = "D1_S1",
-            dayNumber = 1,
-            stageIndex = 1,
-            title = "Sıfır ve Bir'in Sırrı",
-            subtitle = "0+1=1, 0+5=5, 1'den 5'e Toplama • 4×4 Başlangıç",
-            segmentType = DailySegmentType.WARMUP,
-            themeWorld = ThemeWorld.SAYI_ORMANI,
-            difficultyTier = DifficultyTier.STARTER,
-            operation = OperationType.ADDITION,
-            operandCount = 2,
-            minTarget = 1,
-            maxTarget = 5,
-            focusZero = true,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D1_S2",
-            dayNumber = 1,
-            stageIndex = 2,
-            title = "Orman Patikası: 6'dan 10'a",
-            subtitle = "6, 7, 8, 9 ve 10'a Ulaşma • 4×4 Ana Bulmaca",
-            segmentType = DailySegmentType.MAIN_PUZZLE_1,
-            themeWorld = ThemeWorld.SAYI_ORMANI,
-            difficultyTier = DifficultyTier.STARTER,
-            operation = OperationType.ADDITION,
-            operandCount = 2,
-            minTarget = 6,
-            maxTarget = 10,
-            focusZero = true,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D1_S3",
-            dayNumber = 1,
-            stageIndex = 3,
-            title = "Yaprak Molası: Sıfıra İniş",
-            subtitle = "5-5=0, 7-6=1 • Kolay Çıkarma ve Dinlenme Turu",
-            segmentType = DailySegmentType.BREAK_TIME,
-            themeWorld = ThemeWorld.SAYI_ORMANI,
-            difficultyTier = DifficultyTier.STARTER,
-            operation = OperationType.SUBTRACTION,
-            operandCount = 2,
-            minTarget = 0,
-            maxTarget = 5,
-            focusZero = true,
-            matchRuleMode = MatchRuleMode.FREE
-        ),
-        LevelSpec(
-            levelId = "D1_S4",
-            dayNumber = 1,
-            stageIndex = 4,
-            title = "Meşe Ağacı: 1-10 Çıkarma",
-            subtitle = "9-4=5, 10-3=7 • Büyükten Küçüğü Çıkar • 5×5 Kolay",
-            segmentType = DailySegmentType.MAIN_PUZZLE_2,
-            themeWorld = ThemeWorld.SAYI_ORMANI,
-            difficultyTier = DifficultyTier.EASY,
-            operation = OperationType.SUBTRACTION,
-            operandCount = 2,
-            minTarget = 0,
-            maxTarget = 10,
-            focusZero = true,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D1_S5",
-            dayNumber = 1,
-            stageIndex = 5,
-            title = "Orman Karışımı (1-10)",
-            subtitle = "1-10 Arası Toplama ve Çıkarma Bir Arada • 5×5",
-            segmentType = DailySegmentType.MIXED_PRACTICE,
-            themeWorld = ThemeWorld.SAYI_ORMANI,
-            difficultyTier = DifficultyTier.EASY,
-            operation = OperationType.ADDITION,
-            operandCount = 2,
-            minTarget = 1,
-            maxTarget = 10,
-            focusZero = true,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D1_S6",
-            dayNumber = 1,
-            stageIndex = 6,
-            title = "1. Gün Ödül Sandığı",
-            subtitle = "Sayıların Gücü Değerlendirme ve Altın Rozet • 5×5",
-            segmentType = DailySegmentType.EVALUATION_REWARD,
-            themeWorld = ThemeWorld.SAYI_ORMANI,
-            difficultyTier = DifficultyTier.EASY,
-            operation = OperationType.SUBTRACTION,
-            operandCount = 2,
-            minTarget = 1,
-            maxTarget = 10,
-            focusZero = false,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-
-        // ==========================================
-        // 2. GÜN: ONLUK AVCISI (Hazine Mağarası)
-        // - 10-20 toplama, 10-20 çıkarma, 3 sayılı toplama, 2 sayılı çıkarma, 5x5 ve 6x6 tablolar
-        // - Ayrıca 21-30, 31-50, 51-100 ileri toplama hedefleri
-        // ==========================================
-        LevelSpec(
-            levelId = "D2_S1",
-            dayNumber = 2,
-            stageIndex = 1,
-            title = "Kristal Giriş: 11-15 Toplama",
-            subtitle = "6+7=13, 8+7=15 • Onlukları Aşalım • 5×5",
-            segmentType = DailySegmentType.WARMUP,
-            themeWorld = ThemeWorld.HAZINE_MAGARASI,
-            difficultyTier = DifficultyTier.EASY,
-            operation = OperationType.ADDITION,
-            operandCount = 2,
-            minTarget = 11,
-            maxTarget = 15,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D2_S2",
-            dayNumber = 2,
-            stageIndex = 2,
-            title = "Altın Damar: 16-20 ve Üçlü Toplama",
-            subtitle = "5+4+1=10, 8+7+5=20 • Üç Sayıyı Eşleştir • 6×6 Orta",
-            segmentType = DailySegmentType.MAIN_PUZZLE_1,
-            themeWorld = ThemeWorld.HAZINE_MAGARASI,
-            difficultyTier = DifficultyTier.MEDIUM,
-            operation = OperationType.ADDITION,
-            operandCount = 3,
-            minTarget = 10,
-            maxTarget = 20,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D2_S3",
-            dayNumber = 2,
-            stageIndex = 3,
-            title = "Zümrüt Molası: Serbest Toplama (21-30)",
-            subtitle = "21-30 Arası Hedefler • Serbest Eşleştirme Modu • 5×5",
-            segmentType = DailySegmentType.BREAK_TIME,
-            themeWorld = ThemeWorld.HAZINE_MAGARASI,
-            difficultyTier = DifficultyTier.EASY,
-            operation = OperationType.ADDITION,
-            operandCount = 2,
-            minTarget = 21,
-            maxTarget = 30,
-            matchRuleMode = MatchRuleMode.FREE
-        ),
-        LevelSpec(
-            levelId = "D2_S4",
-            dayNumber = 2,
-            stageIndex = 4,
-            title = "Yakut Salon: 10-20 Çıkarma",
-            subtitle = "15-8=7, 20-12=8 • Onluk Bozarak Çıkarma • 6×6 Orta",
-            segmentType = DailySegmentType.MAIN_PUZZLE_2,
-            themeWorld = ThemeWorld.HAZINE_MAGARASI,
-            difficultyTier = DifficultyTier.MEDIUM,
-            operation = OperationType.SUBTRACTION,
-            operandCount = 2,
-            minTarget = 5,
-            maxTarget = 20,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D2_S5",
-            dayNumber = 2,
-            stageIndex = 5,
-            title = "Derin Hazine: Zincir Çıkarma & 31-50",
-            subtitle = "Üç Sayılı Zincir Çıkarma • 6×6 Orta",
-            segmentType = DailySegmentType.MIXED_PRACTICE,
-            themeWorld = ThemeWorld.HAZINE_MAGARASI,
-            difficultyTier = DifficultyTier.MEDIUM,
-            operation = OperationType.SUBTRACTION,
-            operandCount = 3,
-            minTarget = 2,
-            maxTarget = 15,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D2_S6",
-            dayNumber = 2,
-            stageIndex = 6,
-            title = "2. Gün Büyük Hazine (51-100)",
-            subtitle = "51-100 Arası Dev Toplamlar ve Elmas Ödülü • 6×6",
-            segmentType = DailySegmentType.EVALUATION_REWARD,
-            themeWorld = ThemeWorld.HAZINE_MAGARASI,
-            difficultyTier = DifficultyTier.MEDIUM,
-            operation = OperationType.ADDITION,
-            operandCount = 2,
-            minTarget = 51,
-            maxTarget = 100,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-
-        // ==========================================
-        // 3. GÜN: ÇARPIM ORMANI (Çarpım Kalesi)
-        // - 0, 1, 2, 3, 4, 5 ve 10 çarpımları, daha sonra 6, 7, 8, 9 çarpımları
-        // - Görsel gruplama, Eksik çarpan bulma (? × 4 = 20), 6x6 tablolar
-        // ==========================================
-        LevelSpec(
-            levelId = "D3_S1",
-            dayNumber = 3,
-            stageIndex = 1,
-            title = "Kale Kapısı: 0, 1, 2 ve 10 Çarpımları",
-            subtitle = "Sıfır Yutan Eleman & İkişer Ritmik • 6×6 Orta",
-            segmentType = DailySegmentType.WARMUP,
-            themeWorld = ThemeWorld.CARPIM_KALESI,
-            difficultyTier = DifficultyTier.MEDIUM,
-            operation = OperationType.MULTIPLICATION,
-            operandCount = 2,
-            minTarget = 0,
-            maxTarget = 20,
-            focusZero = true,
-            allowedMultipliers = listOf(0, 1, 2, 10),
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D3_S2",
-            dayNumber = 3,
-            stageIndex = 2,
-            title = "Şövalye Salonu: 3, 4 ve 5 Çarpımları",
-            subtitle = "2×3=6, 4×5=20 • Görsel Gruplama ile Çarpma • 6×6",
-            segmentType = DailySegmentType.MAIN_PUZZLE_1,
-            themeWorld = ThemeWorld.CARPIM_KALESI,
-            difficultyTier = DifficultyTier.MEDIUM,
-            operation = OperationType.MULTIPLICATION,
-            operandCount = 2,
-            minTarget = 3,
-            maxTarget = 50,
-            allowedMultipliers = listOf(2, 3, 4, 5, 10),
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D3_S3",
-            dayNumber = 3,
-            stageIndex = 3,
-            title = "Kule Molası: Serbest Çarpım Avı",
-            subtitle = "0, 1, 2, 3, 4, 5, 10 Serbest Eşleştirme • 6×6",
-            segmentType = DailySegmentType.BREAK_TIME,
-            themeWorld = ThemeWorld.CARPIM_KALESI,
-            difficultyTier = DifficultyTier.MEDIUM,
-            operation = OperationType.MULTIPLICATION,
-            operandCount = 2,
-            minTarget = 0,
-            maxTarget = 50,
-            allowedMultipliers = listOf(1, 2, 3, 4, 5, 10),
-            matchRuleMode = MatchRuleMode.FREE
-        ),
-        LevelSpec(
-            levelId = "D3_S4",
-            dayNumber = 3,
-            stageIndex = 4,
-            title = "Ejderha Kulesi: 6, 7, 8 ve 9 Çarpımları",
-            subtitle = "3×7=21, 6×6=36, 8×7=56, 9×9=81 • 6×6 Orta",
-            segmentType = DailySegmentType.MAIN_PUZZLE_2,
-            themeWorld = ThemeWorld.CARPIM_KALESI,
-            difficultyTier = DifficultyTier.MEDIUM,
-            operation = OperationType.MULTIPLICATION,
-            operandCount = 2,
-            minTarget = 12,
-            maxTarget = 81,
-            allowedMultipliers = listOf(6, 7, 8, 9),
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D3_S5",
-            dayNumber = 3,
-            stageIndex = 5,
-            title = "Gizemli Çarpan: ? × 4 = 20",
-            subtitle = "Eksik Çarpanı Bul ve Eşleştir • 6×6 Orta",
-            segmentType = DailySegmentType.MIXED_PRACTICE,
-            themeWorld = ThemeWorld.CARPIM_KALESI,
-            difficultyTier = DifficultyTier.MEDIUM,
-            operation = OperationType.MULTIPLICATION,
-            operandCount = 2,
-            minTarget = 4,
-            maxTarget = 64,
-            allowedMultipliers = listOf(2, 3, 4, 5, 6, 7, 8),
-            questionFormat = QuestionFormat.MISSING_FACTOR,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D3_S6",
-            dayNumber = 3,
-            stageIndex = 6,
-            title = "3. Gün Çarpım Tacı",
-            subtitle = "Tüm Çarpım Tablosu Değerlendirme ve Ödül • 6×6",
-            segmentType = DailySegmentType.EVALUATION_REWARD,
-            themeWorld = ThemeWorld.CARPIM_KALESI,
-            difficultyTier = DifficultyTier.MEDIUM,
-            operation = OperationType.MULTIPLICATION,
-            operandCount = 2,
-            minTarget = 6,
-            maxTarget = 81,
-            allowedMultipliers = listOf(2, 3, 4, 5, 6, 7, 8, 9),
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-
-        // ==========================================
-        // 4. GÜN: BÖLME MAĞARASI (Bölme Uzayı)
-        // - Kalansız bölme, Çarpma ve bölme ilişkisi, Eksik bölen (20÷?=5) ve bölünen, 6x6 ve 8x8 tablolar
-        // ==========================================
-        LevelSpec(
-            levelId = "D4_S1",
-            dayNumber = 4,
-            stageIndex = 1,
-            title = "Yörünge: Kalansız Bölme Başlangıcı",
-            subtitle = "0÷2=0, 6÷2=3, 10÷5=2 • Sıfıra Bölme Yok! • 6×6",
-            segmentType = DailySegmentType.WARMUP,
-            themeWorld = ThemeWorld.BOLME_UZAYI,
-            difficultyTier = DifficultyTier.MEDIUM,
-            operation = OperationType.DIVISION,
-            operandCount = 2,
-            minTarget = 0,
-            maxTarget = 5,
-            focusZero = true,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D4_S2",
-            dayNumber = 4,
-            stageIndex = 2,
-            title = "Yıldız Üssü: Çarpmanın Tersi Bölme",
-            subtitle = "12÷3=4, 20÷4=5, 36÷6=6 • 6×6 Ana Bulmaca",
-            segmentType = DailySegmentType.MAIN_PUZZLE_1,
-            themeWorld = ThemeWorld.BOLME_UZAYI,
-            difficultyTier = DifficultyTier.MEDIUM,
-            operation = OperationType.DIVISION,
-            operandCount = 2,
-            minTarget = 2,
-            maxTarget = 7,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D4_S3",
-            dayNumber = 4,
-            stageIndex = 3,
-            title = "Yerçekimsiz Mola: Serbest Bölme",
-            subtitle = "Bölünen ve Böleni Serbest Eşleştir • 6×6",
-            segmentType = DailySegmentType.BREAK_TIME,
-            themeWorld = ThemeWorld.BOLME_UZAYI,
-            difficultyTier = DifficultyTier.MEDIUM,
-            operation = OperationType.DIVISION,
-            operandCount = 2,
-            minTarget = 1,
-            maxTarget = 8,
-            matchRuleMode = MatchRuleMode.FREE
-        ),
-        LevelSpec(
-            levelId = "D4_S4",
-            dayNumber = 4,
-            stageIndex = 4,
-            title = "Galaksi Kapısı: 56÷7=8 ve 81÷9=9",
-            subtitle = "İleri Kalansız Bölme • 8×8 Zor Tahta",
-            segmentType = DailySegmentType.MAIN_PUZZLE_2,
-            themeWorld = ThemeWorld.BOLME_UZAYI,
-            difficultyTier = DifficultyTier.HARD,
-            operation = OperationType.DIVISION,
-            operandCount = 2,
-            minTarget = 3,
-            maxTarget = 9,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D4_S5",
-            dayNumber = 4,
-            stageIndex = 5,
-            title = "Kayıp Bölen Keşfi: 20 ÷ ? = 5",
-            subtitle = "Eksik Böleni Bul! • 8×8 Zor Tahta",
-            segmentType = DailySegmentType.MIXED_PRACTICE,
-            themeWorld = ThemeWorld.BOLME_UZAYI,
-            difficultyTier = DifficultyTier.HARD,
-            operation = OperationType.DIVISION,
-            operandCount = 2,
-            minTarget = 2,
-            maxTarget = 9,
-            questionFormat = QuestionFormat.MISSING_DIVISOR,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D4_S6",
-            dayNumber = 4,
-            stageIndex = 6,
-            title = "4. Gün Uzay Madalyası: ? ÷ 4 = 5",
-            subtitle = "Eksik Bölünen ve Bölme Ustası Ödülü • 8×8",
-            segmentType = DailySegmentType.EVALUATION_REWARD,
-            themeWorld = ThemeWorld.BOLME_UZAYI,
-            difficultyTier = DifficultyTier.HARD,
-            operation = OperationType.DIVISION,
-            operandCount = 2,
-            minTarget = 2,
-            maxTarget = 9,
-            questionFormat = QuestionFormat.MISSING_DIVIDEND,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-
-        // ==========================================
-        // 5. GÜN: BÜYÜK MATEMATİK FİNALİ (Matematik Adası)
-        // - Dört işlem karışık, 20'ye kadar toplama/çıkarma, Çarpım tablosu, Kalansız bölme
-        // - 8x8 ve 10x10 tablolar, Büyük final ve ödül
-        // ==========================================
-        LevelSpec(
-            levelId = "D5_S1",
-            dayNumber = 5,
-            stageIndex = 1,
-            title = "Ada Sahili: Dört İşlem Isınma",
-            subtitle = "Toplama, Çıkarma, Çarpma, Bölme Karışık • 8×8 Zor",
-            segmentType = DailySegmentType.WARMUP,
-            themeWorld = ThemeWorld.MATEMATIK_ADASI,
-            difficultyTier = DifficultyTier.HARD,
-            operation = OperationType.MIXED,
-            operandCount = 2,
-            minTarget = 2,
-            maxTarget = 20,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D5_S2",
-            dayNumber = 5,
-            stageIndex = 2,
-            title = "Volkan Geçidi: Üçlü Karışık Macera",
-            subtitle = "Üç Sayılı Toplama ve Zincir Çıkarma • 8×8 Zor",
-            segmentType = DailySegmentType.MAIN_PUZZLE_1,
-            themeWorld = ThemeWorld.MATEMATIK_ADASI,
-            difficultyTier = DifficultyTier.HARD,
-            operation = OperationType.MIXED,
-            operandCount = 3,
-            minTarget = 6,
-            maxTarget = 20,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D5_S3",
-            dayNumber = 5,
-            stageIndex = 3,
-            title = "Palmiye Molası: Serbest Dört İşlem",
-            subtitle = "Serbest Eşleştirme ile Hızlı Tekrar • 8×8",
-            segmentType = DailySegmentType.BREAK_TIME,
-            themeWorld = ThemeWorld.MATEMATIK_ADASI,
-            difficultyTier = DifficultyTier.HARD,
-            operation = OperationType.MIXED,
-            operandCount = 2,
-            minTarget = 2,
-            maxTarget = 20,
-            matchRuleMode = MatchRuleMode.FREE
-        ),
-        LevelSpec(
-            levelId = "D5_S4",
-            dayNumber = 5,
-            stageIndex = 4,
-            title = "Efsane Tapınak: 10×10 Uzman Meydan Okuması",
-            subtitle = "100 Blokluk Dev Tahta! • 10×10 Uzman",
-            segmentType = DailySegmentType.MAIN_PUZZLE_2,
-            themeWorld = ThemeWorld.MATEMATIK_ADASI,
-            difficultyTier = DifficultyTier.EXPERT,
-            operation = OperationType.MIXED,
-            operandCount = 2,
-            minTarget = 2,
-            maxTarget = 20,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D5_S5",
-            dayNumber = 5,
-            stageIndex = 5,
-            title = "Bilgelik Köprüsü: 10×10 Çarpma & Bölme",
-            subtitle = "Çarpım Tablosu ve Kalansız Bölme Zirvesi • 10×10 Uzman",
-            segmentType = DailySegmentType.MIXED_PRACTICE,
-            themeWorld = ThemeWorld.MATEMATIK_ADASI,
-            difficultyTier = DifficultyTier.EXPERT,
-            operation = OperationType.MULTIPLICATION,
-            operandCount = 2,
-            minTarget = 4,
-            maxTarget = 81,
-            allowedMultipliers = listOf(2, 3, 4, 5, 6, 7, 8, 9, 10),
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        ),
-        LevelSpec(
-            levelId = "D5_S6",
-            dayNumber = 5,
-            stageIndex = 6,
-            title = "BÜYÜK MATEMATİK FİNALİ",
-            subtitle = "10×10 Büyük Final ve Şampiyonluk Kupası!",
-            segmentType = DailySegmentType.EVALUATION_REWARD,
-            themeWorld = ThemeWorld.MATEMATIK_ADASI,
-            difficultyTier = DifficultyTier.EXPERT,
-            operation = OperationType.MIXED,
-            operandCount = 2,
-            minTarget = 2,
-            maxTarget = 20,
-            matchRuleMode = MatchRuleMode.DIRECTIONAL
-        )
+    val dayTitles: Map<Int, String> = mapOf(
+        1 to "Sayı Ormanı",
+        2 to "Hazine Mağarası",
+        3 to "Çarpım Kalesi",
+        4 to "Bölme Uzayı",
+        5 to "Matematik Adası"
     )
 
-    fun getLevelsForDay(day: Int): List<LevelSpec> = allLevels.filter { it.dayNumber == day }
+    val daySubtitles: Map<Int, String> = mapOf(
+        1 to "Toplama 1'den başla, sıfırı keşfet",
+        2 to "Büyük toplamlar ve çıkarma başlangıcı",
+        3 to "Çıkarmada ustalık, çarpım tablosu",
+        4 to "Çarpmanın tersi: bölme",
+        5 to "Büyük final: 10x10 tahta"
+    )
 
-    fun getLevelById(id: String): LevelSpec = allLevels.firstOrNull { it.levelId == id } ?: allLevels.first()
+    private fun level(
+        day: Int,
+        stage: Int,
+        title: String,
+        subtitle: String,
+        segmentLabel: String,
+        minutes: Int,
+        worldKey: String,
+        gridSize: Int,
+        ruleKind: RuleKind,
+        target: Int,
+        groupSizes: List<Int> = listOf(2),
+        ruleMode: MatchRuleMode = MatchRuleMode.LINE_OF_SIGHT,
+        timeLimitSeconds: Int? = null,
+        focusZero: Boolean = false
+    ) = LevelSpec(
+        levelId = "D${day}_S${stage}",
+        dayNumber = day,
+        stageIndex = stage,
+        title = title,
+        subtitle = subtitle,
+        segmentLabel = segmentLabel,
+        minutes = minutes,
+        worldKey = worldKey,
+        gridSize = gridSize,
+        ruleKind = ruleKind,
+        target = target,
+        groupSizes = groupSizes,
+        ruleMode = ruleMode,
+        timeLimitSeconds = timeLimitSeconds,
+        focusZero = focusZero
+    )
 
-    /**
-     * Toplama modundaki tüm özel hedef basamaklarını (1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-     * 11-15, 16-20, 21-30, 31-50, 51-100) doğrudan deneyimlemek isteyen çocuklar için
-     * hızlı özel seviye oluşturucu.
-     */
-    fun createCustomAdditionLevel(
-        minTarget: Int,
-        maxTarget: Int,
-        operandCount: Int = 2,
-        tier: DifficultyTier = DifficultyTier.STARTER,
-        ruleMode: MatchRuleMode = MatchRuleMode.DIRECTIONAL
-    ): LevelSpec {
-        val label = if (minTarget == maxTarget) "$minTarget'e Ulaşma" else "$minTarget-$maxTarget Arası"
-        return LevelSpec(
-            levelId = "CUSTOM_ADD_${minTarget}_${maxTarget}_${operandCount}_${tier.name}",
-            dayNumber = 1,
-            stageIndex = 1,
-            title = "Toplama Avı: $label",
-            subtitle = "${tier.label} • $operandCount Sayılı Eşleştirme",
-            segmentType = DailySegmentType.MAIN_PUZZLE_1,
-            themeWorld = ThemeWorld.SAYI_ORMANI,
-            difficultyTier = tier,
-            operation = OperationType.ADDITION,
-            operandCount = operandCount,
-            minTarget = minTarget,
-            maxTarget = maxTarget,
-            focusZero = minTarget <= 5,
-            matchRuleMode = ruleMode
-        )
+    val allLevels: List<LevelSpec> = listOf(
+        // 1. GÜN - TOPLAMA: hedef 1'den başlar, 0 devrede
+        level(1, 1, "Isınma: Hedef 1", "Toplamı 1 olan iki taşı bul (0 da var!)", "Isınma", 6, "orman", 4,
+            RuleKind.SUM, 1, listOf(2), focusZero = true),
+        level(1, 2, "Hedef 2", "Toplamı 2 olan taşları eşleştir", "Alıştırma", 8, "orman", 4,
+            RuleKind.SUM, 2, listOf(2), focusZero = true),
+        level(1, 3, "Hedef 5", "Beşe giden iki veya üç sayı", "Ana Bulmaca", 10, "orman", 5,
+            RuleKind.SUM, 5, listOf(2, 3)),
+        level(1, 4, "Hedef 7", "Yediye ulaşan komşu sayılar", "Ana Bulmaca", 12, "orman", 5,
+            RuleKind.SUM, 7, listOf(2, 3)),
+        level(1, 5, "Onluk Avcısı", "Toplamı 10 olan grupları yok et", "Ana Bulmaca", 14, "orman", 6,
+            RuleKind.SUM, 10, listOf(2, 3)),
+        level(1, 6, "Serbest Orman", "Yön serbest: toplamı 10", "Pekiştirme", 10, "orman", 6,
+            RuleKind.SUM, 10, listOf(2, 3), ruleMode = MatchRuleMode.FREE),
+
+        // 2. GÜN - BÜYÜK TOPLAMA + ÇIKARMA BAŞLANGICI
+        level(2, 1, "Hazine Sayıları", "Toplamı 13 olan taşlar", "Isınma", 8, "magara", 6,
+            RuleKind.SUM, 13, listOf(2, 3)),
+        level(2, 2, "Hedef 16", "On altıya üç sayıyla da ulaşabilirsin", "Alıştırma", 10, "magara", 6,
+            RuleKind.SUM, 16, listOf(2, 3)),
+        level(2, 3, "Büyük Mağara", "Toplamı 20 • 8x8 tahta", "Ana Bulmaca", 14, "magara", 8,
+            RuleKind.SUM, 20, listOf(2, 3)),
+        level(2, 4, "Çıkarmaya İlk Adım", "Farkı 2 olan iki taş", "Çıkarma", 8, "magara", 4,
+            RuleKind.DIFF, 2),
+        level(2, 5, "Sıfırı Bul", "Farkı 0 olan eşit taşlar (ikiz sayılar!)", "Çıkarma", 10, "magara", 6,
+            RuleKind.DIFF, 0, focusZero = true),
+        level(2, 6, "Hazine Avı", "Farkı 5 olan taşlar", "Pekiştirme", 10, "magara", 6,
+            RuleKind.DIFF, 5),
+
+        // 3. GÜN - ÇIKARMA USTALIĞI + ÇARPMA
+        level(3, 1, "Kale Bekçileri", "Farkı 4", "Isınma", 8, "kale", 6, RuleKind.DIFF, 4),
+        level(3, 2, "Farkı 7", "Büyük taştan küçüğü çıkar", "Alıştırma", 10, "kale", 6, RuleKind.DIFF, 7),
+        level(3, 3, "Kale Kuşatması", "Farkı 10 • 8x8", "Ana Bulmaca", 12, "kale", 8, RuleKind.DIFF, 10),
+        level(3, 4, "Çarpmanın Sırrı", "Çarpımı 6 olan iki taş", "Çarpma", 8, "kale", 4,
+            RuleKind.PRODUCT, 6),
+        level(3, 5, "Çarpım Odaları", "Çarpımı 12", "Çarpma", 10, "kale", 6, RuleKind.PRODUCT, 12),
+        level(3, 6, "Zindan Zinciri", "Çarpımı 24", "Pekiştirme", 12, "kale", 6, RuleKind.PRODUCT, 24),
+
+        // 4. GÜN - ÇARPMA İLERİ + BÖLME
+        level(4, 1, "Uzay Tozu", "Çarpımı 36", "Isınma", 10, "uzay", 6, RuleKind.PRODUCT, 36),
+        level(4, 2, "Sıfır Gezegeni", "Bölümü 0 (0 ÷ her sayı = 0)", "Bölme", 6, "uzay", 4,
+            RuleKind.QUOTIENT, 0, focusZero = true),
+        level(4, 3, "Hedef Bölüm 2", "Kalansız bölme bul", "Bölme", 10, "uzay", 6, RuleKind.QUOTIENT, 2),
+        level(4, 4, "Yörünge 5", "Bölümü 5 olan çiftler", "Ana Bulmaca", 12, "uzay", 6, RuleKind.QUOTIENT, 5),
+        level(4, 5, "Galaksi Bahçesi", "Çarpımı 48 • 8x8", "Çarpma", 10, "uzay", 8, RuleKind.PRODUCT, 48),
+        level(4, 6, "Kara Delik", "Bölümü 6 • 8x8", "Pekiştirme", 12, "uzay", 8, RuleKind.QUOTIENT, 6),
+
+        // 5. GÜN - BÜYÜK FİNAL
+        level(5, 1, "Ada Rüzgârı", "Toplamı 25", "Isınma", 6, "ada", 8, RuleKind.SUM, 25, listOf(2, 3)),
+        level(5, 2, "Volkan Yolu", "Farkı 15", "Alıştırma", 8, "ada", 8, RuleKind.DIFF, 15),
+        level(5, 3, "İncir Mağazası", "Çarpımı 54", "Ana Bulmaca", 8, "ada", 8, RuleKind.PRODUCT, 54),
+        level(5, 4, "Fener Kulübesi", "Bölümü 8 • süre baskısı", "Ana Bulmaca", 11, "ada", 8,
+            RuleKind.QUOTIENT, 8, timeLimitSeconds = 660),
+        level(5, 5, "BÜYÜK FİNAL 10x10", "Toplamı 30 • 100 blok, ~15 dakika", "Final", 15, "ada", 10,
+            RuleKind.SUM, 30, listOf(2, 3)),
+        level(5, 6, "Serbest Final", "Yön serbest • çarpımı 30", "Ödül", 12, "ada", 10,
+            RuleKind.PRODUCT, 30, ruleMode = MatchRuleMode.FREE)
+    )
+
+    val stagesPerDay: Int = 6
+    val dayCount: Int = 5
+
+    fun levelsForDay(day: Int): List<LevelSpec> =
+        allLevels.filter { it.dayNumber == day }.sortedBy { it.stageIndex }
+
+    fun levelById(levelId: String): LevelSpec? = allLevels.firstOrNull { it.levelId == levelId }
+
+    fun nextLevelId(afterLevelId: String?): String? {
+        if (afterLevelId == null) return allLevels.first().levelId
+        val index = allLevels.indexOfFirst { it.levelId == afterLevelId }
+        return if (index < 0 || index + 1 >= allLevels.size) null else allLevels[index + 1].levelId
+    }
+
+    fun dayMinutes(day: Int): Int = levelsForDay(day).sumOf { it.minutes }
+
+    fun isDayCompleted(day: Int, completedLevelIds: Set<String>): Boolean =
+        levelsForDay(day).all { completedLevelIds.contains(it.levelId) }
+
+    /** Bölümün kısa hedef cümlesi: oyun ekranındaki HEDEF kartında gösterilir. */
+    fun objectiveText(spec: LevelSpec): String {
+        val sizes = spec.groupSizes.filter { it in 2..3 }.ifEmpty { listOf(2) }
+        val groupText = when {
+            sizes == listOf(2) -> "2 taşı"
+            sizes == listOf(3) -> "3 taşı"
+            else -> "2 veya 3 taşı"
+        }
+        val ruleText = when (spec.ruleKind) {
+            RuleKind.SUM -> "Toplamı ${spec.target} olan $groupText seç"
+            RuleKind.DIFF -> "Farkı ${spec.target} olan 2 taşı seç"
+            RuleKind.PRODUCT -> "Çarpımı ${spec.target} olan 2 taşı seç"
+            RuleKind.QUOTIENT -> "Bölümü ${spec.target} olan 2 taşı seç"
+        }
+        return ruleText
+    }
+
+    /** Çocuğa bölüme girerken gösterilen "nasıl oynanır" metni. */
+    fun howToPlayText(spec: LevelSpec): String {
+        val geometry = when (spec.ruleMode) {
+            MatchRuleMode.LINE_OF_SIGHT ->
+                "Taşlar aynı hatta olmalı: yatay, dikey veya çapraz. Aralarında taş kalmışsa önce onu temizle. Yön ters de olabilir (sağdan sola, aşağıdan yukarıya)."
+            MatchRuleMode.FREE ->
+                "Bu bölüm serbest: tahtadaki herhangi iki (veya üç) taşı seçebilirsin, yön ve mesafe önemli değil."
+        }
+        val zero = if (spec.focusZero) " Sıfır da bir taş olarak kullanılabilir." else ""
+        return "$geometry$zero Sıra senin: hangi taşa önce dokunduğun fark etmez."
     }
 }

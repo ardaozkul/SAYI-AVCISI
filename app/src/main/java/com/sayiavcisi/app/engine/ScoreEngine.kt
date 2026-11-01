@@ -1,119 +1,78 @@
 package com.sayiavcisi.app.engine
 
 import com.sayiavcisi.app.model.JokerType
+import com.sayiavcisi.app.model.LevelSpec
+import com.sayiavcisi.app.model.RuleKind
+import kotlin.math.max
 
 /**
- * Sayı Avcısı Puanlama ve Günlük Sınır Motoru (Bölüm 8, 9 ve 10).
+ * Puanlama.
  *
  * Kurallar:
- * - Bir günde en fazla 100 puan kazanılabilmeli (MAX_DAILY_SCORE = 100).
- * - Doğru iki sayılı eşleşme: +2
- * - Doğru üç sayılı eşleşme: +3
- * - Arka arkaya 5 doğru işlem: +5
- * - Arka arkaya 10 doğru işlem: +10
- * - Hatasız bölüm bitirme: +5
- * - Süre bonusu: +3
- * - Günün görevini tamamlama: +10
- * - Toplam günlük kazanım kesinlikle 100 puanı geçmemeli.
- * - Bonusların (Çifte hamle vb.) kullanımı günlük puan sınırını (100) değiştirmemeli.
- * - Yanlış eşleşme: -1 puan.
- * - Joker kullanımı ilgili puan kadar düşüş sağlamalı (İpucu: -5, Yeniden Düzenle: -10, Çifte Hamle: -5).
- * - Puan sıfırın altına düşmemeli (min 0).
- * - ALTIN KURTARMA için çocuk ekstra puan kaybetmemeli (0 puan düşüş).
+ * - Her doğru eşleşme puan getirir; üst üste doğru hamle serisi bonusu büyütür.
+ * - Bir günde EN FAZLA 100 puan kazanılabilir (günlük tavan). Tavanda olan kısım silinir,
+ *   çocuğun bir güne bütün oyunu sıkıştırması gerekmez.
+ * - Jokerler puandan GÖTÜRÜR (tavanı etkilemez).
+ * - ALTIN KURTARMA bedava ve puansızdır: çocuk cezalandırılmaz.
  */
 object ScoreEngine {
 
-    const val MAX_DAILY_SCORE = 100
-    const val MIN_DAILY_SCORE = 0
+    const val DAILY_CAP = 100
 
-    const val POINTS_TWO_NUMBER_MATCH = 2
-    const val POINTS_THREE_NUMBER_MATCH = 3
-    const val BONUS_STREAK_5 = 5
-    const val BONUS_STREAK_10 = 10
-    const val BONUS_FLAWLESS_LEVEL = 5
-    const val BONUS_TIME = 3
-    const val BONUS_DAILY_QUEST_COMPLETE = 10
-    const val PENALTY_WRONG_MATCH = 1
+    /** Üst üste doğrular için eklenen puan; en fazla +8. */
+    fun streakBonus(streak: Int): Int = max(0, streak - 1).coerceAtMost(8)
 
-    data class ScoreUpdateResult(
-        val newDailyScore: Int,
-        val appliedDelta: Int,
-        val streakBonusAwarded: Int,
-        val newStreak: Int
-    )
-
-    /**
-     * Doğru eşleşme sonrasında puanı hesaplar ve [0, 100] aralığına kenetler.
-     */
-    fun onCorrectMatch(
-        currentDailyScore: Int,
-        currentStreak: Int,
-        operandCount: Int,
-        isDoubleScoreActive: Boolean
-    ): ScoreUpdateResult {
-        val nextStreak = currentStreak + 1
-        val basePoints = if (operandCount == 3) POINTS_THREE_NUMBER_MATCH else POINTS_TWO_NUMBER_MATCH
-        val matchPoints = if (isDoubleScoreActive) basePoints * 2 else basePoints
-
-        val streakBonus = when {
-            nextStreak % 10 == 0 -> BONUS_STREAK_10
-            nextStreak % 5 == 0 -> BONUS_STREAK_5
+    /** Tek bir doğru eşleşmenin ham puanı. */
+    fun matchPoints(spec: LevelSpec, groupSize: Int, streak: Int, doubleNext: Boolean): Int {
+        val base = when (spec.ruleKind) {
+            RuleKind.SUM -> 4
+            RuleKind.DIFF -> 5
+            RuleKind.PRODUCT -> 6
+            RuleKind.QUOTIENT -> 7
+        }
+        val tripleBonus = if (groupSize == 3) 2 else 0
+        val sizeBonus = when (spec.gridSize) {
+            in 8..10 -> 2
+            in 6..7 -> 1
             else -> 0
         }
-
-        val rawTargetScore = currentDailyScore + matchPoints + streakBonus
-        val clampedScore = rawTargetScore.coerceIn(MIN_DAILY_SCORE, MAX_DAILY_SCORE)
-        val actualDelta = clampedScore - currentDailyScore
-
-        return ScoreUpdateResult(
-            newDailyScore = clampedScore,
-            appliedDelta = actualDelta,
-            streakBonusAwarded = streakBonus,
-            newStreak = nextStreak
-        )
+        val raw = base + tripleBonus + sizeBonus + streakBonus(streak)
+        return if (doubleNext) raw * 2 else raw
     }
 
     /**
-     * Yanlış eşleşme sonrasında puanı 1 düşürür (0'ın altına inmez) ve seriyi sıfırlar.
+     * Günlük tavana göre ödüllendirilebilir kısmı hesaplar.
+     * @return (verilecekPuan, yeniGunlukKazanilan)
      */
-    fun onWrongMatch(currentDailyScore: Int): ScoreUpdateResult {
-        val clampedScore = (currentDailyScore - PENALTY_WRONG_MATCH).coerceIn(MIN_DAILY_SCORE, MAX_DAILY_SCORE)
-        val actualDelta = clampedScore - currentDailyScore
-        return ScoreUpdateResult(
-            newDailyScore = clampedScore,
-            appliedDelta = actualDelta,
-            streakBonusAwarded = 0,
-            newStreak = 0
-        )
+    fun applyDailyCap(dailyEarned: Int, rawPoints: Int): Pair<Int, Int> {
+        val room = (DAILY_CAP - dailyEarned).coerceAtLeast(0)
+        val granted = rawPoints.coerceAtMost(room)
+        return Pair(granted, (dailyEarned + granted).coerceAtMost(DAILY_CAP))
     }
 
-    /**
-     * Joker kullanımında ilgili puanı düşürür (İpucu -5, Yeniden Düzenle -10, Çifte Hamle -5).
-     * Puan sıfırın altına düşmez.
-     */
-    fun onJokerUsed(currentDailyScore: Int, jokerType: JokerType): Pair<Int, Int> {
-        val clampedScore = (currentDailyScore - jokerType.cost).coerceIn(MIN_DAILY_SCORE, MAX_DAILY_SCORE)
-        val delta = clampedScore - currentDailyScore
-        return Pair(clampedScore, delta)
+    fun jokerCost(type: JokerType): Int = type.cost
+
+    /** Bölüm bitirme ödülü: altın ve (kusursuzsa) elmas. */
+    fun completionRewards(spec: LevelSpec, flawless: Boolean, usedRescue: Boolean): Pair<Int, Int> {
+        val gold = 10 + spec.gridSize + spec.stageIndex
+        val diamonds = when {
+            flawless && !usedRescue -> 2
+            flawless -> 1
+            else -> 0
+        }
+        return Pair(gold, diamonds)
     }
 
-    /**
-     * Bölüm sonu bonuslarını (Hatasız bitirme +5, Süre bonusu +3, Günün görevini tamamlama +10)
-     * günlük 100 puan sınırını aşmayacak şekilde uygular.
-     */
-    fun onLevelCompleted(
-        currentDailyScore: Int,
-        hadZeroMistakes: Boolean,
-        finishedWithinTimeLimit: Boolean,
-        completedFullDayQuest: Boolean
-    ): Pair<Int, Int> {
-        var bonus = 0
-        if (hadZeroMistakes) bonus += BONUS_FLAWLESS_LEVEL
-        if (finishedWithinTimeLimit) bonus += BONUS_TIME
-        if (completedFullDayQuest) bonus += BONUS_DAILY_QUEST_COMPLETE
-
-        val clampedScore = (currentDailyScore + bonus).coerceIn(MIN_DAILY_SCORE, MAX_DAILY_SCORE)
-        val actualDelta = clampedScore - currentDailyScore
-        return Pair(clampedScore, actualDelta)
+    /** Süre baskısı olan bölümlerde kalan süreye göre ek puan. */
+    fun timeBonus(remainingSeconds: Int?): Int = when {
+        remainingSeconds == null -> 0
+        remainingSeconds >= 120 -> 5
+        remainingSeconds >= 60 -> 3
+        remainingSeconds > 0 -> 1
+        else -> 0
     }
+
+    /** Günlük tavan yüzdesi: harita ekranındaki ilerleme çubuğu. */
+    fun dailyProgressPercent(dailyEarned: Int): Int =
+        (dailyEarned * 100 / DAILY_CAP).coerceIn(0, 100)
 }

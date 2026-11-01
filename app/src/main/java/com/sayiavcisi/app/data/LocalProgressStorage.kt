@@ -58,6 +58,11 @@ data class ParentStatsSnapshot(
     val subtractionRate: Int get() = successRatePercent(subtractionCorrect, subtractionTotal)
     val multiplicationRate: Int get() = successRatePercent(multiplicationCorrect, multiplicationTotal)
     val divisionRate: Int get() = successRatePercent(divisionCorrect, divisionTotal)
+
+    companion object {
+        /** Bir günde kazanılabilecek en fazla puan. */
+        const val DAILY_CAP = 100
+    }
 }
 
 class LocalProgressStorage(context: Context) {
@@ -77,10 +82,38 @@ class LocalProgressStorage(context: Context) {
         if (stored != today) {
             prefs.edit()
                 .putString("daily_stamp", today)
+                .putInt("daily_earned", 0)
+                .putInt("daily_spent", 0)
                 .putInt("daily_score", 0)
                 .putLong("daily_play_seconds", 0L)
                 .apply()
         }
+    }
+
+    /** Bugün kazanılan brüt puan; günde en fazla 100 puan birikebilir. */
+    fun grossEarnedToday(): Int {
+        ensureDailyRollover()
+        return prefs.getInt("daily_earned", 0).coerceIn(0, ParentStatsSnapshot.DAILY_CAP)
+    }
+
+    fun addGrossEarned(delta: Int) {
+        if (delta <= 0) return
+        ensureDailyRollover()
+        val newGross = (prefs.getInt("daily_earned", 0) + delta).coerceAtMost(ParentStatsSnapshot.DAILY_CAP)
+        prefs.edit().putInt("daily_earned", newGross).apply()
+    }
+
+    /** Jokerler puandan götürür, brüt tavanı etkilemez. */
+    fun addJokerSpending(amount: Int) {
+        if (amount <= 0) return
+        ensureDailyRollover()
+        prefs.edit().putInt("daily_spent", prefs.getInt("daily_spent", 0) + amount).apply()
+    }
+
+    /** Ekranda gösterilen günlük puan: kazanılan - jokerlerde harcanan, en az 0. */
+    fun dailyNetScore(): Int {
+        ensureDailyRollover()
+        return (grossEarnedToday() - prefs.getInt("daily_spent", 0)).coerceAtLeast(0)
     }
 
     fun loadSnapshot(): ParentStatsSnapshot {
@@ -124,7 +157,7 @@ class LocalProgressStorage(context: Context) {
         return ParentStatsSnapshot(
             completedLevelIds = completedLevels,
             completedDays = completedDays,
-            dailyScore = prefs.getInt("daily_score", 0).coerceIn(0, 100),
+            dailyScore = dailyNetScore(),
             totalGoldCoins = prefs.getInt("gold_coins", 0),
             totalDiamonds = prefs.getInt("diamonds", 0),
             totalOperations = totalOps,
@@ -147,11 +180,6 @@ class LocalProgressStorage(context: Context) {
             customTimeAdditionSeconds = prefs.getInt("custom_time_addition_sec", 0),
             lastActiveLevelId = prefs.getString("last_active_level_id", "D1_S1")
         )
-    }
-
-    fun saveDailyScore(newScore: Int) {
-        ensureDailyRollover()
-        prefs.edit().putInt("daily_score", newScore.coerceIn(0, 100)).apply()
     }
 
     fun addRewards(goldDelta: Int, diamondDelta: Int) {
@@ -231,7 +259,6 @@ class LocalProgressStorage(context: Context) {
                 editor.putInt("div_total", prefs.getInt("div_total", 0) + 1)
                 if (isCorrect) editor.putInt("div_correct", prefs.getInt("div_correct", 0) + 1)
             }
-            OperationType.MIXED -> {}
         }
 
         if (!isCorrect) {
@@ -271,7 +298,21 @@ class LocalProgressStorage(context: Context) {
         prefs.edit().putInt("custom_time_addition_sec", extraSeconds.coerceIn(-15, 60)).apply()
     }
 
+    /** Ebeveyn paneli için günlük puan sayacını sıfırlar (yarın yeniden 100 puan hakkı). */
     fun resetDailyScoreOnly() {
-        prefs.edit().putInt("daily_score", 0).apply()
+        prefs.edit()
+            .putInt("daily_earned", 0)
+            .putInt("daily_spent", 0)
+            .apply()
+    }
+
+    /** Tüm ilerlemeyi sıfırlar: yeni bir çocuk oyun oynayacaksa ebeveyn kullanır. */
+    fun resetAllProgress() {
+        val sound = prefs.getBoolean("sound_enabled", true)
+        val relaxed = prefs.getBoolean("relaxed_untimed_mode", true)
+        prefs.edit().clear()
+            .putBoolean("sound_enabled", sound)
+            .putBoolean("relaxed_untimed_mode", relaxed)
+            .apply()
     }
 }
