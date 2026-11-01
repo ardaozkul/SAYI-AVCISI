@@ -1,4 +1,3 @@
-# SAYI-AVCISI
 # 🦊 SAYI AVCISI – Çocuklar İçin Matematik Bulmaca Oyunu (Android APK)
 
 **SAYI AVCISI**, 3. sınıf seviyesindeki çocukların **toplama (+), çıkarma (-), çarpma (×) ve bölme (÷)** işlemlerini oyun oynarken öğrenmesini, anlamlandırmasını ve hızlandırmasını sağlayan, **Kotlin & Jetpack Compose** ile geliştirilmiş, **%100 çevrimdışı (offline)** çalışan aşamalı bir Android matematik bulmaca oyunudur.
@@ -17,6 +16,53 @@ Derlenmiş ve doğrudan Android telefon/tabletlere kurulmaya hazır **APK** dosy
   - Release APK: [`apk/SAYI-AVCISI-release.apk`](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/apk/SAYI-AVCISI-release.apk) (`SAYI-AVCISI.apk` ile aynı imzalı kurulum paketi)
   - Debug APK: [`apk/SAYI-AVCISI-debug.apk`](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/apk/SAYI-AVCISI-debug.apk)
   - Web Giriş / Bilgilendirme Sayfası: [`index.html`](https://github.com/ardaozkul/SAYI-AVCISI/blob/main/index.html)
+
+---
+
+## 📸 OYUN İÇİNDEN GERÇEK EKRAN GÖRÜNTÜLERİ
+
+Aşağıdaki görüntüler Android emülatöründe (Pixel 5, Android 14) kurulu APK'dan `adb screencap` ile gerçek olarak alınmıştır.
+Tüm dosyalar [`docs/screenshots/`](https://github.com/ardaozkul/SAYI-AVCISI/tree/main/docs/screenshots) klasöründedir.
+
+| 🗺️ 5 Günlük Macera Haritası | 💎 2. Gün: Hazine Mağarası |
+|:---:|:---:|
+| ![Macera Haritası](docs/screenshots/01-macera-haritasi.png) | ![2. Gün](docs/screenshots/02-macera-haritasi-2-gun.png) |
+
+| 🎯 5×5 Toplama Tahtası | ✨ Eşleşme ve Ödül Anı |
+|:---:|:---:|
+| ![Oyun Tahtası](docs/screenshots/03-oyun-tahtasi-toplama.png) | ![Eşleşme](docs/screenshots/04-oyun-eslesme-animasyonu.png) |
+
+| 🏰 Çarpım Kalesi | 🏝️ 10×10 Uzman Tahtası |
+|:---:|:---:|
+| ![Çarpma](docs/screenshots/05-oyun-tahtasi-carpma.png) | ![Uzman](docs/screenshots/06-oyun-uzman-tahtasi.png) |
+
+| 🎉 Bölüm Tamamlandı | 🧪 Özel Toplama Laboratuvarı |
+|:---:|:---:|
+| ![Tamamlandı](docs/screenshots/07-bolum-tamamlandi.png) | ![Laboratuvar](docs/screenshots/08-ozel-toplama-laboratuvari.png) |
+
+| 🎲 Laboratuvar Seçenekleri | 👨‍👩‍👧 Ebeveyn Paneli | 📊 Başarı Analizi |
+|:---:|:---:|:---:|
+| ![Serbest](docs/screenshots/09-ozel-toplama-laboratuvari-secenekler.png) | ![Ebeveyn](docs/screenshots/10-ebeveyn-paneli.png) | ![Analiz](docs/screenshots/11-ebeveyn-paneli-analiz.png) |
+
+> Tüm kareler `node tools/capture-screenshots.mjs` komutuyla yeniden üretilebilir: araç emülatörde uygulamayı kendisi oynar (adb + uiautomator) ve gerçek ekran görüntülerini kaydeder.
+> Projenin orijinal gereksinim listesi: [docs/proje-gereksinimleri.md](docs/proje-gereksinimleri.md)
+
+---
+
+## 🆕 1.1.0 SÜRÜM YENİLİKLERİ
+
+- 🔊 **Ses efektleri artık gerçekten çalıyor:** `AudioTrack` `MODE_STATIC` + `write()` hatası (sessiz çalma) `MODE_STREAM` akışlı oynatmaya çevrildi; doğru/yanlış/bonus/bölüm bitirme sesleri cihazda duyulur.
+- 📌 **Kaldığı yerden devam (Bölüm 15):** Yarım kalan tahta (bloklar, kalan hedefler, jokerler, seri, hata sayısı) cihazda saklanır; uygulama kapanıp açılınca **aynı tahtaya** dönülür. Tahta üretimi artık tohum (seed) tabanlı ve deterministiktir. `🆕 YENİ TAHTA` düğmesi kaydı sıfırlar.
+- 🛡️ **ALTIN KURTARMA kurala bağlandı:** Sistem artık jokerler varken erken devreye girip joker ekonomisini bozmuyor; önce çocuğu doğru jogere yönlendiriyor, çocuk ~25 saniye takılı kalırsa (veya 3 joker de bittiyse) sessizce ve puansız kurtarıyor.
+- 🧱 **Çökme koruması:** Çözülebilirlik doğrulaması düşüren tahtalarda farklı tohumla yeniden üretim + serbest eşleştirme moduna geçiş (`BoardFactory.createReliably`); uç senaryoda oyun kapanmıyor.
+- ⬅️ **Geri tuşu düzeltmesi:** Android geri tuşu oyunun içinden uygulamayı kapatmak yerine macera haritasına döner (`BackHandler`).
+- ➖ **Puan adaleti:** Geometrik (görüş hattı) ihlalleri de Bölüm 10 gereği `-1` puan ve hata olarak kaydediliyor; süre bonusu (`+3`) artık yalnızca gerçekten süreli bölümlerde sürenin altında bitirildiğinde veriliyor.
+- 📅 **Gerçek "günlük" semantiği:** Günlük 100 puan tavanı ve günlük oyun süresi takvim günü değişince otomatik sıfırlanıyor.
+- 🔋 **Performans/kayıt sağlığı:** Süre sayacı diske saniye saniye değil 15 saniyede bir yazılıyor.
+- ♿ **Çocuk ve erişim dostu arayüz:** Sayı blokları ve joker düğmeleri ekran okuyucu için etiketlendi (`Role.Button`, `contentDescription`), joker düğmeleri ≥ 54 dp dokunma alanına çıkarıldı.
+- 📊 **Ebeveyn paneli doğruluğu:** Hiç deneme yapılmamış işlem türü artık `%100 başarılı` gibi gösterilmiyor ("Henüz deneme yok"); ek süre ayarı `-15..+60 sn` tam aralığında seçilebiliyor.
+- 📐 **Dar ekran yerleşimi:** Ebeveyn panelindeki 5 günlük ilerleme kutuları artık `weight` ile eşit paylaşıyor (metin bölünmüyor), ana ekran üst barında "Ebeveyn" düğmesi ikinci satıra kırılmıyor ve Kaşif Tilki mesajı kesilmeden sarıyor.
+- ✅ **Testler 7 → 15 doğrulama kriterine çıkarıldı:** Kesin puan tablosu, kurtarma politikası, tohum determinizmi/çökmesiz üretim, kayıt geri yükleme, tam tahta temizliği, eksik çarpan/bölen/bölünen formatları ve 5 gün × 6 aşama müfredat yapısı otomatik test altında.
 
 ---
 
@@ -101,7 +147,7 @@ cd SAYI-AVCISI
 
 ## ✅ KALİTE KONTROL VE OTOMATİK TEST SONUÇLARI
 
-`SayiAvcisiQualityVerificationTest` birim test paketi ile aşağıdaki 12 kalite kontrol kriteri otomatik olarak doğrulanmıştır:
+`SayiAvcisiQualityVerificationTest` birim test paketi ile aşağıdaki 15 kalite kontrol kriteri otomatik olarak doğrulanmıştır (`./gradlew testDebugUnitTest`):
 1. **Bütün işlem seviyelerinin matematiksel doğruluğu:** ✅ Başarılı (30 müfredat seviyesi + 15 özel toplama basamağı).
 2. **Sıfırın kullanıldığı işlemler (`0+1`, `0+0`, `5-5`, `0×4`, `0÷2`):** ✅ Başarılı.
 3. **Sıfıra bölme olmadığı doğrulaması:** ✅ Başarılı (Üretimde ve seçimde %100 engellenir).
@@ -114,3 +160,8 @@ cd SAYI-AVCISI
 10. **İnternet olmadan %100 çevrimdışı çalışma (gerçek zamanlı PCM ses sentezi dahil):** ✅ Başarılı.
 11. **Telefon ve tablet dikey ekran uyumluluğu:** ✅ Başarılı.
 12. **Kararlılık ve performans testleri:** ✅ Başarılı.
+13. **Yarıda kalan bölümün kaydedilip aynı tahtadan devam edilebilmesi (bozuk kayıt güvenliği):** ✅ Başarılı (`GameSnapshotCodec` gidiş-dönüş ve bozulmuş veri testi).
+14. **Çökmesiz taht üretimi ve `ALTIN KURTARMA` karar politikası (hamle varken joker yönlendirmesi, yokken kurtarma):** ✅ Başarılı (`BoardFactory` + `GoldenRescuePolicy`).
+15. **Puan tablosunun birebir doğrulanması, eksik çarpan/bölen/bölünen biçimleri ve 5 gün × 6 basamak müfredat yapısı:** ✅ Başarılı.
+
+Test paketi sonucu: **14 test, 0 başarısız** — `app/build/reports/tests/testDebugUnitTest/index.html`.

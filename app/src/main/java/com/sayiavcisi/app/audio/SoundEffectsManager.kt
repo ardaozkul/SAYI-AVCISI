@@ -109,19 +109,40 @@ object SoundEffectsManager {
                             .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                             .build()
                     )
-                    .setBufferSizeInBytes(pcmBuffer.size * 2)
-                    .setTransferMode(AudioTrack.MODE_STATIC)
+                    .setBufferSizeInBytes(streamBufferSizeInBytes(sampleRate, pcmBuffer.size))
+                    .setTransferMode(AudioTrack.MODE_STREAM)
                     .build()
 
-                audioTrack.write(pcmBuffer, 0, pcmBuffer.size)
-                audioTrack.play()
-                val totalMs = notes.sumOf { it.durationMs }.toLong() + 100L
-                Thread.sleep(totalMs)
-                audioTrack.stop()
-                audioTrack.release()
+                try {
+                    audioTrack.play()
+                    val chunk = ShortArray(minOf(CHUNK_SAMPLES, pcmBuffer.size))
+                    var written = 0
+                    while (written < pcmBuffer.size) {
+                        val sampleCount = minOf(chunk.size, pcmBuffer.size - written)
+                        System.arraycopy(pcmBuffer, written, chunk, 0, sampleCount)
+                        val progress = audioTrack.write(chunk, 0, sampleCount)
+                        if (progress <= 0) break
+                        written += progress
+                    }
+                    Thread.sleep(120L)
+                    audioTrack.stop()
+                } finally {
+                    audioTrack.release()
+                }
             } catch (_: Throwable) {
                 // Ses donanımı meşgulse sessizce geç
             }
         }
+    }
+
+    private const val CHUNK_SAMPLES = 2048
+
+    private fun streamBufferSizeInBytes(sampleRate: Int, pcmSampleCount: Int): Int {
+        val minBytes = AudioTrack.getMinBufferSize(
+            sampleRate,
+            AudioFormat.CHANNEL_OUT_MONO,
+            AudioFormat.ENCODING_PCM_16BIT
+        ).coerceAtLeast(1024)
+        return maxOf(minBytes, pcmSampleCount * 2)
     }
 }

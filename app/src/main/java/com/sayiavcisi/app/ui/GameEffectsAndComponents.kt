@@ -44,6 +44,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sayiavcisi.app.model.OperationFeedback
@@ -136,7 +137,7 @@ fun ExplorerMascotBanner(
                     Text(text = mascotEmoji, fontSize = 22.sp)
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Kaşif Tilki",
                         color = Color(0xFFFBBF24),
@@ -148,7 +149,8 @@ fun ExplorerMascotBanner(
                         color = Color.White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        maxLines = 2
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

@@ -3,6 +3,9 @@ package com.sayiavcisi.app.data
 import android.content.Context
 import android.content.SharedPreferences
 import com.sayiavcisi.app.model.OperationType
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Cihaz içi çevrimdışı (offline) veri, ilerleme, ebeveyn istatistikleri ve yarım kalan oyun kaydı yöneticisi.
@@ -45,9 +48,11 @@ data class ParentStatsSnapshot(
     val lastActiveLevelId: String?
 ) {
     fun successRatePercent(correct: Int, total: Int): Int {
-        if (total <= 0) return 100
+        if (total <= 0) return 0
         return ((correct.toFloat() / total.toFloat()) * 100f).toInt().coerceIn(0, 100)
     }
+
+    fun hasOperationData(total: Int): Boolean = total > 0
 
     val additionRate: Int get() = successRatePercent(additionCorrect, additionTotal)
     val subtractionRate: Int get() = successRatePercent(subtractionCorrect, subtractionTotal)
@@ -60,7 +65,26 @@ class LocalProgressStorage(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("sayi_avcisi_offline_prefs", Context.MODE_PRIVATE)
 
+    /**
+     * "Günlük" metrikler (puan tavanı 100 ve günlük oyun süresi) takvim günü değişince sıfırlanır.
+     */
+    private fun todayStamp(): String =
+        SimpleDateFormat("yyyyMMdd", Locale.US).format(Date())
+
+    private fun ensureDailyRollover() {
+        val stored = prefs.getString("daily_stamp", null)
+        val today = todayStamp()
+        if (stored != today) {
+            prefs.edit()
+                .putString("daily_stamp", today)
+                .putInt("daily_score", 0)
+                .putLong("daily_play_seconds", 0L)
+                .apply()
+        }
+    }
+
     fun loadSnapshot(): ParentStatsSnapshot {
+        ensureDailyRollover()
         val completedLevels = prefs.getStringSet("completed_levels", emptySet()) ?: emptySet()
         val completedDays = (1..5).filter { day ->
             (1..6).all { stage -> completedLevels.contains("D${day}_S${stage}") }
@@ -126,6 +150,7 @@ class LocalProgressStorage(context: Context) {
     }
 
     fun saveDailyScore(newScore: Int) {
+        ensureDailyRollover()
         prefs.edit().putInt("daily_score", newScore.coerceIn(0, 100)).apply()
     }
 
@@ -141,7 +166,21 @@ class LocalProgressStorage(context: Context) {
     fun markLevelCompleted(levelId: String) {
         val current = (prefs.getStringSet("completed_levels", emptySet()) ?: emptySet()).toMutableSet()
         current.add(levelId)
-        prefs.edit().putStringSet("completed_levels", current).apply()
+        prefs.edit()
+            .putStringSet("completed_levels", current)
+            .remove("resume_$levelId")
+            .apply()
+    }
+
+    /** Yarım kalan oyun tahtası kaydını (kaldığı yerden devam) saklar. */
+    fun saveGameSnapshot(levelId: String, encoded: String) {
+        prefs.edit().putString("resume_$levelId", encoded).apply()
+    }
+
+    fun loadGameSnapshot(levelId: String): String? = prefs.getString("resume_$levelId", null)
+
+    fun clearGameSnapshot(levelId: String) {
+        prefs.edit().remove("resume_$levelId").apply()
     }
 
     fun saveLastActiveLevel(levelId: String) {
@@ -215,6 +254,7 @@ class LocalProgressStorage(context: Context) {
 
     fun addPlayTimeSeconds(seconds: Long) {
         if (seconds <= 0) return
+        ensureDailyRollover()
         val current = prefs.getLong("daily_play_seconds", 0L)
         prefs.edit().putLong("daily_play_seconds", current + seconds).apply()
     }

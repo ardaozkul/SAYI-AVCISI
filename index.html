@@ -218,6 +218,80 @@
             color: var(--text-muted);
             font-size: 0.9rem;
         }
+        /* SCREENSHOT GALLERY */
+        .shot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 18px;
+        }
+        .shot-card {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid #334155;
+            border-radius: 18px;
+            padding: 12px;
+            text-align: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .shot-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent);
+        }
+        .shot-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
+            display: block;
+            aspect-ratio: 9 / 19.5;
+            object-fit: cover;
+            object-position: top;
+            background: #020617;
+        }
+        .shot-card figcaption {
+            margin-top: 10px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+        .shot-card small {
+            display: block;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin-top: 2px;
+        }
+        /* INSTALL STEPS */
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        .step {
+            background: rgba(30, 41, 59, 0.88);
+            border-left: 4px solid var(--primary);
+            border-radius: 14px;
+            padding: 18px 20px;
+        }
+        .step b {
+            color: var(--accent);
+            display: block;
+            margin-bottom: 6px;
+            font-size: 1.02rem;
+        }
+        .step p {
+            color: #cbd5e1;
+            font-size: 0.92rem;
+        }
+        .news-list {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid #334155;
+            border-radius: 18px;
+            padding: 20px 24px;
+        }
+        .news-list li {
+            color: #cbd5e1;
+            font-size: 0.94rem;
+            margin-bottom: 8px;
+            list-style: none;
+        }
     </style>
 </head>
 <body>
@@ -251,6 +325,104 @@
             <code>https://github.com/ardaozkul/SAYI-AVCISI/raw/main/apk/SAYI-AVCISI-debug.apk</code>
         </div>
     </section>
+
+    <!-- OYUN İÇİ GÖRÜNTÜLER -->
+    <h2 class="section-title">📸 Oyun İçinden Gerçek Kareler</h2>
+    <p style="color:#cbd5e1; margin-bottom:16px;">
+        Aşağıdaki ekran görüntüleri Android emülatöründe (Pixel 5 • Android 14) kurulu <strong>APK</strong> içinden
+        <code>adb screencap</code> ile gerçek olarak alınmıştır. Görüntülerin tamamı
+        <a href="https://github.com/ardaozkul/SAYI-AVCISI/tree/main/docs/screenshots" style="color:var(--cyan);">docs/screenshots</a>
+        klasöründedir.
+    </p>
+    <div class="shot-grid">
+        <figure class="shot-card">
+            <img src="docs/screenshots/01-macera-haritasi.png" alt="SAYI AVCISI 5 günlük macera haritası ekranı" loading="lazy" />
+            <figcaption>🗺️ Macera Haritası</figcaption>
+            <small>5 gün, 30 bölüm, günlük 60 dakikalık program</small>
+        </figure>
+        <figure class="shot-card">
+            <img src="docs/screenshots/02-macera-haritasi-2-gun.png" alt="Hazine Mağarası 2. gün sekmesi" loading="lazy" />
+            <figcaption>💎 2. Gün: Hazine Mağarası</figcaption>
+            <small>10–20 toplama, çıkarma ve üç sayılı işlemler</small>
+        </figure>
+        <figure class="shot-card">
+            <img src="docs/screenshots/03-oyun-tahtasi-toplama.png" alt="5x5 toplama oyun tahtası" loading="lazy" />
+            <figcaption>🎯 5×5 Toplama Tahtası</figcaption>
+            <small>HEDEF göstergesi, kalan blok ve seçilen sayı sayacı</small>
+        </figure>
+        <figure class="shot-card">
+            <img src="docs/screenshots/04-oyun-eslesme-animasyonu.png" alt="Doğru eşleştirme sonrası animasyon" loading="lazy" />
+            <figcaption>✨ Eşleşme ve Ödül Anı</figcaption>
+            <small>Bloklar patlar, kaşif tilki puanı ve seriyi duyurur</small>
+        </figure>
+        <figure class="shot-card">
+            <img src="docs/screenshots/05-oyun-tahtasi-carpma.png" alt="Çarpım Kalemi 6x6 çarpma tahtası" loading="lazy" />
+            <figcaption>🏰 Çarpım Kalesi</figcaption>
+            <small>Çarpım tablosu ve eksik çarpan (? × 4 = 20) soruları</small>
+        </figure>
+        <figure class="shot-card">
+            <img src="docs/screenshots/06-oyun-uzman-tahtasi.png" alt="10x10 uzman oyun tahtası" loading="lazy" />
+            <figcaption>🏝️ 10×10 Uzman Tahtası</figcaption>
+            <small>Büyük final: karışık dört işlem, 45 saniye süre</small>
+        </figure>
+        <figure class="shot-card">
+            <img src="docs/screenshots/07-bolum-tamamlandi.png" alt="Bölüm tamamlandı kutlama ekranı" loading="lazy" />
+            <figcaption>🎉 Bölüm Tamamlandı</figcaption>
+            <small>Konfeti, altın/elmas ödülü ve sonraki bölüme geçiş</small>
+        </figure>
+        <figure class="shot-card">
+            <img src="docs/screenshots/08-ozel-toplama-laboratuvari.png" alt="Özel toplama laboratuvarı ekranı" loading="lazy" />
+            <figcaption>🧪 Özel Toplama Laboratuvarı</figcaption>
+            <small>1'den 100'e hedef, tahta boyutu ve kural seçimi</small>
+        </figure>
+        <figure class="shot-card">
+            <img src="docs/screenshots/09-ozel-toplama-laboratuvari-secenekler.png" alt="Özel toplama laboratuvarı boyut ve kural seçenekleri" loading="lazy" />
+            <figcaption>🎲 Laboratuvar Seçenekleri</figcaption>
+            <small>Ayrı bir oyun kuralı olarak satır/sütun sınırı yok</small>
+        </figure>
+        <figure class="shot-card">
+            <img src="docs/screenshots/10-ebeveyn-paneli.png" alt="Ebeveyn paneli genel durum ekranı" loading="lazy" />
+            <figcaption>👨‍👩‍ Ebeveyn Paneli</figcaption>
+            <small>Günlük puan, altın/elmas ve işlem sayıları</small>
+        </figure>
+        <figure class="shot-card">
+            <img src="docs/screenshots/11-ebeveyn-paneli-analiz.png" alt="İşlem türlerine göre başarı oranları ve analiz" loading="lazy" />
+            <figcaption>📊 Başarı ve Zorlanma Analizi</figcaption>
+            <small>Dört işlem oranları, çarpım tablosu zorluk haritası</small>
+        </figure>
+    </div>
+
+    <!-- KURULUM -->
+    <h2 class="section-title">📲 3 Adımda Kurulum (APK)</h2>
+    <div class="steps">
+        <div class="step">
+            <b>1. APK'yı indir</b>
+            <p>Telefon veya tabletin tarayıcısından indirme bağlantısına dokun:
+                <code>github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk</code></p>
+        </div>
+        <div class="step">
+            <b>2. Bilinmeyen kaynağa izin ver</b>
+            <p>Android, mağaza dışı uygulamalarda bir kez "Bilinmeyen kaynaklardan yükleme" izni ister; onayla.</p>
+        </div>
+        <div class="step">
+            <b>3. Yükle ve oyna</b>
+            <p>"Sayı Avcısı" simgesine dokun. İnternet gerekmez, tüm ilerleme cihazda saklanır.</p>
+        </div>
+    </div>
+
+    <!-- YENİLİKLER -->
+    <h2 class="section-title">🆕 1.1.0 Sürüm Yenilikleri</h2>
+    <ul class="news-list">
+        <li>🔊 Ses efektleri gerçekten çalar (AudioTrack akış moduna geçirildi) — doğru, yanlış, bonus ve fanfare.</li>
+        <li>📌 Kaldığı yerden devam: yarım kalan tahta, jokerler ve seri cihazda saklanır; uygulama kapanıp açılınca aynı tahtaya döner.</li>
+        <li>🛡️ ALTIN KURTARMA artık yalnızca jokerler tükenince (veya çocuk takılı kalınca) devreye girer; puan kaybı yok.</li>
+        <li>⬅️ Android geri tuşu uygulamayı kapatmadan macera haritasına döner.</li>
+        <li>➖ Geometrik hatalı seçimler de -1 puan ve hata olarak kaydedilir; süre bonusu yalnızca süreli bölümlerde.</li>
+        <li>📅 Günlük 100 puan tavanı ve günlük süre gerçek takvim gününe göre otomatik sıfırlanır.</li>
+        <li>♿ Sayı blokları ve joker düğmeleri ekran okuyucu etiketli, dokunma alanları büyütüldü.</li>
+        <li>📐 Dar ekranda yerleşim düzeltmeleri: 5 günlük ilerleme kutuları eşit paylaşır, "Ebeveyn" düğmesi satıra kırılmaz, tilki mesajı kesilmez.</li>
+        <li>✅ Otomatik kalite kontrol testleri 14 doğrulama senaryosuna (15 kriter) çıkarıldı.</li>
+    </ul>
 
     <!-- 5 GÜNLÜK PROGRAM -->
     <h2 class="section-title">🗺️ 5 Günlük Eğitim ve Macera Programı (Her Gün 60 Dakika)</h2>

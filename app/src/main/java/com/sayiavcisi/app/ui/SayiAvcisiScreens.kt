@@ -1,5 +1,6 @@
 package com.sayiavcisi.app.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,15 +45,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sayiavcisi.app.audio.SoundEffectsManager
+import com.sayiavcisi.app.data.GameResumeSnapshot
+import com.sayiavcisi.app.data.GameSnapshotCodec
 import com.sayiavcisi.app.data.LocalProgressStorage
 import com.sayiavcisi.app.data.ParentStatsSnapshot
+import com.sayiavcisi.app.engine.BoardFactory
 import com.sayiavcisi.app.engine.BoardGeneratorAndSolver
 import com.sayiavcisi.app.engine.CurriculumRepository
+import com.sayiavcisi.app.engine.GoldenRescuePolicy
 import com.sayiavcisi.app.engine.MatchingValidator
 import com.sayiavcisi.app.engine.ScoreEngine
 import com.sayiavcisi.app.model.BlockCell
@@ -70,6 +80,11 @@ enum class AppScreen {
     PARENT_PANEL
 }
 
+private const val PLAY_TIME_FLUSH_SECONDS = 15L
+
+private fun nextBoardSeed(): Int =
+    (System.currentTimeMillis() and 0x7FFFL).toInt() * 31 + (System.nanoTime() and 0xFFFL).toInt()
+
 @Composable
 fun SayiAvcisiApp(storage: LocalProgressStorage) {
     var stats by remember { mutableStateOf(storage.loadSnapshot()) }
@@ -86,6 +101,19 @@ fun SayiAvcisiApp(storage: LocalProgressStorage) {
 
     fun refreshStats() {
         stats = storage.loadSnapshot()
+    }
+
+    // Android geri tuşu: oyun içi ekranlardan uygulamayı kapatmadan macera haritasına döner
+    if (currentScreen != AppScreen.ADVENTURE_HUB) {
+        BackHandler(enabled = true) {
+            when (currentScreen) {
+                AppScreen.GAMEPLAY -> {
+                    refreshStats()
+                    currentScreen = AppScreen.ADVENTURE_HUB
+                }
+                else -> currentScreen = AppScreen.ADVENTURE_HUB
+            }
+        }
     }
 
     when (currentScreen) {
@@ -215,7 +243,7 @@ fun AdventureHubScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                 Text(text = "🦊", fontSize = 28.sp)
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
@@ -245,7 +273,8 @@ fun AdventureHubScreen(
                         text = if (stats.soundEnabled) "🔊 Ses" else "🔇 Sessiz",
                         color = Color.White,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
                     )
                 }
                 Box(
@@ -259,7 +288,8 @@ fun AdventureHubScreen(
                         text = "👨‍👩‍👧 Ebeveyn",
                         color = Color(0xFFFBBF24),
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
                     )
                 }
             }
@@ -269,7 +299,7 @@ fun AdventureHubScreen(
 
         // Karakter & Puan Durumu
         ExplorerMascotBanner(
-            moodMessage = "Hoş geldin Sayı Avcısı! Blokları eşleştir, yıldızları ve elmasları topla!",
+            moodMessage = "Blokları eşleştir, yıldızları topla!",
             isCelebrating = false,
             isGentleWarning = false,
             dailyScore = stats.dailyScore,
@@ -669,34 +699,87 @@ fun ActivePuzzleGameScreen(
     onNextLevelRequested: (LevelSpec) -> Unit,
     onExitToHub: () -> Unit
 ) {
-    // Seviye değiştiğinde garantili çözülebilir tahtayı üret
-    var boardGenerationSeed by remember(levelSpec.levelId) { mutableIntStateOf(0) }
-    val generatedBoard = remember(levelSpec.levelId, boardGenerationSeed) {
-        BoardGeneratorAndSolver.generateVerifiedBoard(levelSpec)
+    // Seviye değiştiğinde garantili çözülebilir tahtayı üret.
+    // Tohum (seed) kayıt altında tutulur; yarım kalan oyun aynı tahtaya geri yüklenir (Bölüm 15).
+    val gridSize = levelSpec.difficultyTier.gridSize
+    var boardAttemptKey by remember(levelSpec.levelId) { mutableIntStateOf(0) }
+
+    val savedResume = remember(levelSpec.levelId, boardAttemptKey) {
+        if (boardAttemptKey != 0) null
+        else GameSnapshotCodec.decode(
+            raw = storage.loadGameSnapshot(levelSpec.levelId),
+            expectedLevelId = levelSpec.levelId,
+            expectedCellCount = gridSize * gridSize
+        )?.takeIf { !it.isFinished }
     }
 
-    var cells by remember(generatedBoard) { mutableStateOf(generatedBoard.cells) }
-    var remainingTargets by remember(generatedBoard) { mutableStateOf(generatedBoard.targets) }
-    var effectiveRuleMode by remember(generatedBoard) { mutableStateOf(generatedBoard.matchRuleMode) }
+    val prepared = remember(levelSpec.levelId, boardAttemptKey, savedResume) {
+        val fromResume: BoardFactory.PreparedBoard? = savedResume?.let { resume ->
+            runCatching {
+                val candidate = BoardFactory.createReliably(
+                    spec = levelSpec.copy(matchRuleMode = resume.matchRuleMode),
+                    seed = resume.boardSeed,
+                    attempts = 1
+                )
+                if (candidate.board.cells.size == resume.cells.size) candidate else null
+            }.getOrNull()
+        }
+        fromResume ?: runCatching { BoardFactory.createReliably(levelSpec, nextBoardSeed()) }
+            .getOrElse {
+                // Üretim bir şekilde doğrulanamazsa bile oyunu kapatma: en küçük gevşek tahtaya düş
+                BoardFactory.createReliably(
+                    spec = levelSpec.copy(
+                        difficultyTier = DifficultyTier.STARTER,
+                        matchRuleMode = MatchRuleMode.FREE,
+                        operandCount = 2
+                    ),
+                    seed = nextBoardSeed()
+                )
+            }
+    }
+    val generatedBoard = prepared.board
+    val boardSeedUsed = prepared.seedUsed
+
+    var cells by remember(generatedBoard, savedResume) {
+        mutableStateOf(savedResume?.cells ?: generatedBoard.cells)
+    }
+    var remainingTargets by remember(generatedBoard, savedResume) {
+        mutableStateOf(
+            if (savedResume == null) generatedBoard.targets
+            else generatedBoard.targets.drop(
+                (generatedBoard.targets.size - savedResume.remainingTargetCount).coerceIn(0, generatedBoard.targets.size)
+            )
+        )
+    }
+    var effectiveRuleMode by remember(generatedBoard, savedResume) {
+        mutableStateOf(savedResume?.matchRuleMode ?: generatedBoard.matchRuleMode)
+    }
     var selectedCoords by remember(generatedBoard) { mutableStateOf<List<Pair<Int, Int>>>(emptyList()) }
 
-    // Başlangıçta 3 joker hakkı
-    var hintJokerCount by remember(generatedBoard) { mutableIntStateOf(1) }
-    var shuffleJokerCount by remember(generatedBoard) { mutableIntStateOf(1) }
-    var doubleScoreJokerCount by remember(generatedBoard) { mutableIntStateOf(1) }
+    // Başlangıçta 3 joker hakkı (İpucu, Yeniden Düzenle, Çifte Hamle)
+    var hintJokerCount by remember(generatedBoard, savedResume) { mutableIntStateOf(savedResume?.hintJokers ?: 1) }
+    var shuffleJokerCount by remember(generatedBoard, savedResume) { mutableIntStateOf(savedResume?.shuffleJokers ?: 1) }
+    var doubleScoreJokerCount by remember(generatedBoard, savedResume) { mutableIntStateOf(savedResume?.doubleScoreJokers ?: 1) }
     var isDoubleScoreActive by remember(generatedBoard) { mutableStateOf(false) }
 
-    var currentStreak by remember(generatedBoard) { mutableIntStateOf(0) }
-    var mistakesInLevel by remember(generatedBoard) { mutableIntStateOf(0) }
+    var currentStreak by remember(generatedBoard, savedResume) { mutableIntStateOf(savedResume?.streak ?: 0) }
+    var mistakesInLevel by remember(generatedBoard, savedResume) { mutableIntStateOf(savedResume?.mistakes ?: 0) }
     var feedback by remember(generatedBoard) { mutableStateOf<OperationFeedback?>(null) }
-    var mascotMessage by remember(generatedBoard) {
-        mutableStateOf("${levelSpec.themeWorld.title} bölümüne hoş geldin! Hedefe uygun sayıları eşleştir.")
+    var mascotMessage by remember(generatedBoard, savedResume) {
+        mutableStateOf(
+            if (savedResume != null) {
+                "📌 Kaldığın yerden devam ediyorsun! ${levelSpec.themeWorld.title} macerası hızla sürüyor."
+            } else {
+                "${levelSpec.themeWorld.title} bölümüne hoş geldin! Hedefe uygun sayıları eşleştir."
+            }
+        )
     }
     var isCelebrating by remember(generatedBoard) { mutableStateOf(false) }
     var isGentleWarning by remember(generatedBoard) { mutableStateOf(false) }
     var burstTriggerKey by remember { mutableIntStateOf(0) }
     var isLevelCompleted by remember(generatedBoard) { mutableStateOf(false) }
     var isTimeExpiredPrompt by remember(generatedBoard) { mutableStateOf(false) }
+    var gameTickSeconds by remember(generatedBoard, boardAttemptKey) { mutableIntStateOf(0) }
 
     // Süre yönetimi (Kolay/Başlangıç: Süresiz, Orta: 90 sn, Zor: 60 sn, Uzman: 45 sn)
     var isRelaxedModeLocal by remember(generatedBoard) { mutableStateOf(stats.relaxedUntimedMode) }
@@ -711,11 +794,18 @@ fun ActivePuzzleGameScreen(
 
     var stepStartTimestampMs by remember(generatedBoard) { mutableLongStateOf(System.currentTimeMillis()) }
 
-    // Günlük oyun süresi sayacı ve geri sayım
+    // Günlük oyun süresi sayacı ve geri sayım.
+    // Pil/disk dostu olmak için süre saniye saniye diske yazılmaz, 15 saniyede bir biriktirilerek flush edilir.
     LaunchedEffect(generatedBoard, isRelaxedModeLocal, isLevelCompleted, isTimeExpiredPrompt) {
+        var pendingPlaySeconds = 0L
         while (!isLevelCompleted && !isTimeExpiredPrompt) {
             delay(1000L)
-            storage.addPlayTimeSeconds(1L)
+            gameTickSeconds += 1
+            pendingPlaySeconds += 1L
+            if (pendingPlaySeconds >= PLAY_TIME_FLUSH_SECONDS) {
+                storage.addPlayTimeSeconds(pendingPlaySeconds)
+                pendingPlaySeconds = 0L
+            }
             val currentRem = remainingSeconds
             if (!isRelaxedModeLocal && currentRem != null) {
                 if (currentRem > 1) {
@@ -727,36 +817,102 @@ fun ActivePuzzleGameScreen(
                 }
             }
         }
+        if (pendingPlaySeconds > 0L) storage.addPlayTimeSeconds(pendingPlaySeconds)
     }
 
     // Her hamleden veya durum değişiminden sonra:
     // Mevcut hedef için geçerli hamle var mı kontrol et!
-    // Eğer geçerli hamle kalmadıysa ve 3 joker de tükendiyse (veya oyuncunun tahtayı açacak jokeri kalmadıysa)
-    // ALTIN KURTARMA (Bölüm 9) sessiz ve otomatik olarak devreye girer!
+    // Geçerli hamle kalmadıysa ALTIN KURTARMA (Bölüm 9) devreye girer:
+    // üç joker de tükendiyse sessizce ve puan düşürmeden anında; joker varsa önce çocuğu joker kullanmaya yönlendirir,
+    // kısa bir bekleme sonrası yine mahsur bırakmaz.
     val currentTargetStep = remainingTargets.firstOrNull()
-    LaunchedEffect(cells, remainingTargets, hintJokerCount, shuffleJokerCount, doubleScoreJokerCount, effectiveRuleMode) {
-        if (currentTargetStep != null && !isLevelCompleted) {
-            val validMoves = MatchingValidator.findAllValidMovesForStep(
-                cells = cells,
-                step = currentTargetStep,
-                mode = effectiveRuleMode
+    var stuckSinceTick by remember(generatedBoard, cells, remainingTargets, effectiveRuleMode) {
+        mutableIntStateOf(-1)
+    }
+    LaunchedEffect(
+        cells, remainingTargets, effectiveRuleMode, gameTickSeconds,
+        hintJokerCount, shuffleJokerCount, doubleScoreJokerCount
+    ) {
+        val step = currentTargetStep
+        if (step == null || isLevelCompleted) return@LaunchedEffect
+
+        val validMoves = MatchingValidator.findAllValidMovesForStep(
+            cells = cells,
+            step = step,
+            mode = effectiveRuleMode
+        )
+        if (validMoves.isNotEmpty()) {
+            stuckSinceTick = -1
+            return@LaunchedEffect
+        }
+
+        if (stuckSinceTick < 0) stuckSinceTick = gameTickSeconds
+        val stuckSeconds = (gameTickSeconds - stuckSinceTick).coerceAtLeast(0)
+        val jokersLeft = GoldenRescuePolicy.jokersRemaining(
+            hint = hintJokerCount, shuffle = shuffleJokerCount, doubleScore = doubleScoreJokerCount
+        )
+
+        when (
+            GoldenRescuePolicy.decide(
+                hasValidMove = false,
+                targetsRemaining = remainingTargets.size,
+                jokersRemaining = jokersLeft,
+                secondsSinceStuck = stuckSeconds
             )
-            if (validMoves.isEmpty()) {
-                // Tahtada geçerli hamle bulunamadı!
-                // Eğer üç joker de tükendiyse (veya Yeniden Düzenle jokeri bittiyse) ALTIN KURTARMA devreye girer:
-                // Çocuğa başarısız olduğu hissettirilmez, ekstra puan düşülmez, tahta otomatik çözülebilir duruma getirilir.
-                val rescue = BoardGeneratorAndSolver.triggerGoldenRescue(
-                    currentCells = cells,
-                    remainingTargets = remainingTargets,
-                    mode = effectiveRuleMode,
-                    gridSize = generatedBoard.gridSize
-                )
-                if (rescue.wasTriggered) {
-                    cells = rescue.updatedCells
-                    effectiveRuleMode = rescue.effectiveMode
-                    mascotMessage = "✨ Altın Kurtarma Işığı parladı! Yeni sayı dizilimiyle maceraya devam!"
+        ) {
+            GoldenRescuePolicy.Decision.GUIDE_TO_JOKER -> {
+                if (stuckSeconds == 0) {
+                    mascotMessage = "🧩 Bu hedef için tahtada hamle kalmadı! 🔄 DÜZENLE jokeriyle blokları yeniden dizebilirsin."
                 }
             }
+
+            GoldenRescuePolicy.Decision.USE_GOLDEN_RESCUE_NOW -> {
+                if (stuckSeconds % 10 == 0) {
+                    val rescue = BoardGeneratorAndSolver.triggerGoldenRescue(
+                        currentCells = cells,
+                        remainingTargets = remainingTargets,
+                        mode = effectiveRuleMode,
+                        gridSize = generatedBoard.gridSize
+                    )
+                    if (rescue.wasTriggered) {
+                        cells = rescue.updatedCells
+                        effectiveRuleMode = rescue.effectiveMode
+                        stuckSinceTick = -1
+                        mascotMessage = "✨ Altın Kurtarma Işığı parladı! Yeni sayı dizilimiyle maceraya devam!"
+                    }
+                }
+            }
+
+            else -> Unit
+        }
+    }
+
+    // Yarım kalan oyunu cihazda sakla: uygulama kapatılıp açılınca aynı tahtaya dönülür (Bölüm 15)
+    LaunchedEffect(
+        cells, remainingTargets, effectiveRuleMode, hintJokerCount, shuffleJokerCount,
+        doubleScoreJokerCount, currentStreak, mistakesInLevel, isLevelCompleted
+    ) {
+        if (isLevelCompleted || remainingTargets.isEmpty() || cells.all { it.isCleared }) {
+            storage.clearGameSnapshot(levelSpec.levelId)
+        } else {
+            storage.saveGameSnapshot(
+                levelSpec.levelId,
+                GameSnapshotCodec.encode(
+                    GameResumeSnapshot(
+                        levelId = levelSpec.levelId,
+                        boardSeed = boardSeedUsed,
+                        gridSize = generatedBoard.gridSize,
+                        matchRuleMode = effectiveRuleMode,
+                        remainingTargetCount = remainingTargets.size,
+                        hintJokers = hintJokerCount,
+                        shuffleJokers = shuffleJokerCount,
+                        doubleScoreJokers = doubleScoreJokerCount,
+                        streak = currentStreak,
+                        mistakes = mistakesInLevel,
+                        cells = cells
+                    )
+                )
+            )
         }
     }
 
@@ -792,22 +948,35 @@ fun ActivePuzzleGameScreen(
         val elapsedMs = (System.currentTimeMillis() - stepStartTimestampMs).coerceAtLeast(300L)
 
         if (!geoValid) {
-            // Geometrik kural ihlali (ör. aralarında başka aktif sayı bloğu var veya aynı doğrultuda değil)
+            // Geometrik kural ihlali (ör. aralarında başka aktif sayı bloğu var veya aynı doğrultuda değil).
+            // Bölüm 10 gereği yanlış eşleşme -1 puandır ve "hatasız bölüm" bonusunu engeller;
+            // seri (streak) yalnızca matematik hatasında sıfırlanır çünkü çocuk işlemi doğru biliyor.
             SoundEffectsManager.playGentleWrongSound()
+            mistakesInLevel += 1
             isCelebrating = false
             isGentleWarning = true
             selectedCoords = emptyList()
             val msg = geoErrorMsg ?: "Bu bloklar aynı doğrultuda değil veya aralarında başka bir sayı var!"
             mascotMessage = msg
+            storage.recordOperationAttempt(
+                operation = currentTargetStep.operation,
+                isCorrect = false,
+                operands = selectedValues,
+                targetPrompt = currentTargetStep.promptDisplay,
+                responseTimeMs = elapsedMs
+            )
+            val geoScoreRes = ScoreEngine.onWrongMatch(storage.loadSnapshot().dailyScore)
+            storage.saveDailyScore(geoScoreRes.newDailyScore)
             feedback = OperationFeedback(
                 isCorrect = false,
                 expressionText = selectedValues.joinToString(" , "),
-                explanationText = msg,
+                explanationText = "$msg (${geoScoreRes.appliedDelta} Puan)",
                 operation = currentTargetStep.operation,
                 operands = selectedValues,
                 result = 0,
-                pointsDelta = 0
+                pointsDelta = geoScoreRes.appliedDelta
             )
+            onStatsChanged()
             return
         }
 
@@ -873,7 +1042,10 @@ fun ActivePuzzleGameScreen(
                 storage.markLevelCompleted(levelSpec.levelId)
                 val updatedSnap = storage.loadSnapshot()
                 val completedDayNow = updatedSnap.completedDays.contains(levelSpec.dayNumber)
-                val finishedInTime = remainingSeconds == null || (remainingSeconds ?: 0) > 0
+                // Süre bonusu (+3) yalnızca gerçekten süre limitli bir bölüm süresi dolmadan bitirildiğinde verilir;
+                // süresiz/rahat modda otomatik bonus yazılmaz (günlük 100 puan tavanı korunur).
+                val timeLeftAtFinish = remainingSeconds
+                val finishedInTime = timeLeftAtFinish != null && timeLeftAtFinish > 0
 
                 val (finalDailyScore, _) = ScoreEngine.onLevelCompleted(
                     currentDailyScore = updatedSnap.dailyScore,
@@ -919,12 +1091,11 @@ fun ActivePuzzleGameScreen(
         when (jokerType) {
             JokerType.HINT -> {
                 if (hintJokerCount <= 0) return
-                var validMoves = MatchingValidator.findAllValidMovesForStep(cells, currentTargetStep, effectiveRuleMode)
+                val validMoves = MatchingValidator.findAllValidMovesForStep(cells, currentTargetStep, effectiveRuleMode)
                 if (validMoves.isEmpty()) {
-                    val rescue = BoardGeneratorAndSolver.triggerGoldenRescue(cells, remainingTargets, effectiveRuleMode, generatedBoard.gridSize)
-                    cells = rescue.updatedCells
-                    effectiveRuleMode = rescue.effectiveMode
-                    validMoves = MatchingValidator.findAllValidMovesForStep(cells, currentTargetStep, effectiveRuleMode)
+                    // Hamlesiz tahtada ipucu jokeri harcılmaz; kurtarma politikası tahtayı açar.
+                    mascotMessage = "💡 Şu an parlayacak hamle yok! 🔄 DÜZENLE jokeriyle tahtayı açtıktan sonra ipucunu kullan."
+                    return
                 }
                 val hintCoords = validMoves.firstOrNull()?.toSet() ?: emptySet()
                 if (hintCoords.isNotEmpty()) {
@@ -1172,13 +1343,40 @@ fun ActivePuzzleGameScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "🛡️ Altın Kurtarma Sistemi Aktif: Jokerler bitse bile hiçbir zaman çözümsüz tabloda kalmazsın!",
-                    color = Color(0xFFFBBF24),
-                    fontSize = 10.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "🛡️ Altın Kurtarma güvencesi: jokerler bitse bile asla çözümsüz tabloda kalmazsın!",
+                        color = Color(0xFFFBBF24),
+                        fontSize = 10.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF334155))
+                            .heightIn(min = 30.dp)
+                            .semantics {
+                                role = Role.Button
+                                contentDescription = "Yeni tahta üret ve bu bölümü baştan başlat"
+                            }
+                            .clickable {
+                                storage.clearGameSnapshot(levelSpec.levelId)
+                                boardAttemptKey += 1
+                            }
+                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "🆕 YENİ TAHTA",
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
 
@@ -1312,7 +1510,10 @@ fun ActivePuzzleGameScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Button(
-                            onClick = { boardGenerationSeed += 1 },
+                            onClick = {
+                                storage.clearGameSnapshot(levelSpec.levelId)
+                                boardAttemptKey += 1
+                            },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155))
                         ) {
@@ -1488,6 +1689,11 @@ private fun NumberBlockTile(
                 .clip(RoundedCornerShape(10.dp))
                 .background(bgColor)
                 .border(1.5.dp, borderColor, RoundedCornerShape(10.dp))
+                .semantics {
+                    role = Role.Button
+                    contentDescription = "Sayı ${cell.value}, satır ${cell.row + 1}, sütun ${cell.col + 1}" +
+                        if (isSelected) ", seçili sıra ${selectionOrder + 1}" else ""
+                }
                 .clickable(enabled = !cell.isCleared) { onClick() },
             contentAlignment = Alignment.Center
         ) {
@@ -1538,9 +1744,15 @@ private fun JokerActionButton(
                 if (activeHighlight) Color.White else Color.White.copy(alpha = 0.25f),
                 RoundedCornerShape(10.dp)
             )
+            .heightIn(min = 54.dp)
+            .semantics {
+                role = Role.Button
+                contentDescription = "$title $subtitle" + if (enabled) "" else ", kullanılamaz"
+            }
             .clickable(enabled = enabled) { onClick() }
-            .padding(vertical = 6.dp, horizontal = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Text(
             text = title,

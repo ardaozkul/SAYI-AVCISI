@@ -83,7 +83,7 @@ fun ParentPanelScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "👨‍👩‍👧 EBEVEYN PANELİ",
                     color = Color(0xFFFBBF24),
@@ -96,12 +96,13 @@ fun ParentPanelScreen(
                     fontSize = 12.sp
                 )
             }
+            Spacer(modifier = Modifier.width(8.dp))
             Button(
                 onClick = onBack,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("← Oyuna Dön", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("← Oyuna Dön", color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1)
             }
         }
 
@@ -111,7 +112,7 @@ fun ParentPanelScreen(
         SectionCard(title = "📅 5 Günlük Macera İlerlemesi") {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 for (day in 1..5) {
                     val isDone = stats.completedDays.contains(day)
@@ -119,6 +120,7 @@ fun ParentPanelScreen(
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
+                            .weight(1f)
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (isDone) Color(0xFF065F46) else Color(0xFF1E293B))
                             .border(
@@ -126,7 +128,7 @@ fun ParentPanelScreen(
                                 if (isDone) Color(0xFF34D399) else Color(0xFF475569),
                                 RoundedCornerShape(12.dp)
                             )
-                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                            .padding(horizontal = 4.dp, vertical = 8.dp)
                     ) {
                         Text(
                             text = if (isDone) "✅" else "⏳",
@@ -136,12 +138,14 @@ fun ParentPanelScreen(
                             text = "$day. Gün",
                             color = Color.White,
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
                         )
                         Text(
-                            text = "$stagesDone/6 Bölüm",
+                            text = "$stagesDone/6 B.",
                             color = Color(0xFFCBD5E1),
-                            fontSize = 10.sp
+                            fontSize = 10.sp,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
@@ -208,28 +212,28 @@ fun ParentPanelScreen(
             SkillRateBar(
                 title = "Toplama Başarı Oranı (+)",
                 rate = stats.additionRate,
-                detail = "${stats.additionCorrect} / ${stats.additionTotal} doğru",
+                detail = noDataTextOr(stats.additionTotal) { "${stats.additionCorrect} / ${stats.additionTotal} doğru" },
                 barColor = Color(0xFF10B981)
             )
             Spacer(modifier = Modifier.height(8.dp))
             SkillRateBar(
                 title = "Çıkarma Başarı Oranı (-)",
                 rate = stats.subtractionRate,
-                detail = "${stats.subtractionCorrect} / ${stats.subtractionTotal} doğru",
+                detail = noDataTextOr(stats.subtractionTotal) { "${stats.subtractionCorrect} / ${stats.subtractionTotal} doğru" },
                 barColor = Color(0xFFF59E0B)
             )
             Spacer(modifier = Modifier.height(8.dp))
             SkillRateBar(
                 title = "Çarpma Başarı Oranı (×)",
                 rate = stats.multiplicationRate,
-                detail = "${stats.multiplicationCorrect} / ${stats.multiplicationTotal} doğru",
+                detail = noDataTextOr(stats.multiplicationTotal) { "${stats.multiplicationCorrect} / ${stats.multiplicationTotal} doğru" },
                 barColor = Color(0xFF8B5CF6)
             )
             Spacer(modifier = Modifier.height(8.dp))
             SkillRateBar(
                 title = "Bölme Başarı Oranı (÷)",
                 rate = stats.divisionRate,
-                detail = "${stats.divisionCorrect} / ${stats.divisionTotal} doğru",
+                detail = noDataTextOr(stats.divisionTotal) { "${stats.divisionCorrect} / ${stats.divisionTotal} doğru" },
                 barColor = Color(0xFF06B6D4)
             )
         }
@@ -376,18 +380,25 @@ fun ParentPanelScreen(
                 fontSize = 11.sp
             )
             Spacer(modifier = Modifier.height(6.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(0, 15, 30, 60).forEach { extra ->
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf(-15, 0, 15, 30, 60).forEach { extra ->
                     val isSelected = stats.customTimeAdditionSeconds == extra
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(if (isSelected) Color(0xFF2563EB) else Color(0xFF334155))
                             .clickable { onChangeExtraTime(extra) }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = if (extra == 0) "Standart (+0 sn)" else "+$extra sn Ek Süre",
+                            text = when {
+                                extra == 0 -> "Standart (+0 sn)"
+                                extra > 0 -> "+$extra sn Ek Süre"
+                                else -> "$extra sn Daha Kısa"
+                            },
                             color = Color.White,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
@@ -402,7 +413,7 @@ fun ParentPanelScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF475569)),
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text("Yeni Gün İçin Günlük Puanı (0/100) Sıfırla", color = Color.White, fontSize = 12.sp)
+                Text("Günlük Puanı Şimdi Sıfırla (yeni günde otomatik sıfırlanır)", color = Color.White, fontSize = 12.sp)
             }
         }
     }
@@ -463,6 +474,10 @@ private fun MetricBox(
         )
     }
 }
+
+/** Ebeveyn panelinde veri olmayan işlem türü "yüzde 100 başarılı" gibi gösterilmez. */
+private fun noDataTextOr(total: Int, filledText: () -> String): String =
+    if (total <= 0) "Henüz deneme yok" else filledText()
 
 @Composable
 private fun SkillRateBar(
