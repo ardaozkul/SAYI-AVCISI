@@ -45,7 +45,15 @@ data class ParentStatsSnapshot(
     val soundEnabled: Boolean,
     val relaxedUntimedMode: Boolean,
     val customTimeAdditionSeconds: Int,
-    val lastActiveLevelId: String?
+    val lastActiveLevelId: String?,
+    /** Tablet / geniş ekran tahta sütunu. 0 = otomatik. */
+    val boardColumns: Int = 0,
+    /** Sonsuz Av'ın ayrı yeşil puan kayıtları. */
+    val endlessBestScore: Int = 0,
+    val endlessTotalScore: Int = 0,
+    val endlessMissions: Int = 0,
+    val endlessPlays: Int = 0,
+    val endlessBestStreak: Int = 0
 ) {
     fun successRatePercent(correct: Int, total: Int): Int {
         if (total <= 0) return 0
@@ -178,7 +186,13 @@ class LocalProgressStorage(context: Context) {
             soundEnabled = prefs.getBoolean("sound_enabled", true),
             relaxedUntimedMode = prefs.getBoolean("relaxed_untimed_mode", true),
             customTimeAdditionSeconds = prefs.getInt("custom_time_addition_sec", 0),
-            lastActiveLevelId = prefs.getString("last_active_level_id", "A1")
+            lastActiveLevelId = prefs.getString("last_active_level_id", "A1"),
+            boardColumns = prefs.getInt("board_columns", 0).coerceIn(0, 20),
+            endlessBestScore = prefs.getInt("endless_best_score", 0),
+            endlessTotalScore = prefs.getInt("endless_total_score", 0),
+            endlessMissions = prefs.getInt("endless_missions", 0),
+            endlessPlays = prefs.getInt("endless_plays", 0),
+            endlessBestStreak = prefs.getInt("endless_best_streak", 0)
         )
     }
 
@@ -296,6 +310,29 @@ class LocalProgressStorage(context: Context) {
 
     fun setCustomTimeAdditionSeconds(extraSeconds: Int) {
         prefs.edit().putInt("custom_time_addition_sec", extraSeconds.coerceIn(-15, 60)).apply()
+    }
+
+    /** 0 = otomatik; 6/9/12/15 gibi geniş ekran sütun sayısı. */
+    fun setBoardColumns(columns: Int) {
+        val safe = if (columns <= 0) 0 else columns.coerceIn(4, 20)
+        prefs.edit().putInt("board_columns", safe).apply()
+    }
+
+    /** Sonsuz Av bitince yeşil puan kaydını ayrı tutar. */
+    fun recordEndlessResult(score: Int, missions: Int, bestStreak: Int) {
+        val safeScore = score.coerceAtLeast(0)
+        val safeMissions = missions.coerceAtLeast(0)
+        val best = prefs.getInt("endless_best_score", 0)
+        prefs.edit()
+            .putInt("endless_best_score", maxOf(best, safeScore))
+            .putInt("endless_total_score", prefs.getInt("endless_total_score", 0) + safeScore)
+            .putInt("endless_missions", prefs.getInt("endless_missions", 0) + safeMissions)
+            .putInt("endless_plays", prefs.getInt("endless_plays", 0) + 1)
+            .putInt(
+                "endless_best_streak",
+                maxOf(prefs.getInt("endless_best_streak", 0), bestStreak.coerceAtLeast(0))
+            )
+            .apply()
     }
 
     /** Ebeveyn paneli için günlük puan sayacını sıfırlar (yarın yeniden 100 puan hakkı). */

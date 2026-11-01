@@ -125,8 +125,19 @@ object RuleEngine {
     /** Matematik kontrolü: sıra bağımsız. */
     fun mathMatches(values: List<Int>, kind: RuleKind, target: Int): Boolean = when (kind) {
         RuleKind.SUM -> values.size in 2..4 && values.sum() == target
-        RuleKind.DIFF -> values.size == 2 && abs(values[0] - values[1]) == target
-        RuleKind.PRODUCT -> values.size == 2 && values[0] * values[1] == target
+        RuleKind.DIFF -> when (values.size) {
+            2 -> abs(values[0] - values[1]) == target
+            3 -> {
+                val ordered = values.sortedDescending()
+                ordered[0] - ordered[1] - ordered[2] == target
+            }
+            else -> false
+        }
+        RuleKind.PRODUCT -> when (values.size) {
+            2 -> values[0] * values[1] == target
+            3 -> values[0] * values[1] * values[2] == target
+            else -> false
+        }
         RuleKind.QUOTIENT -> values.size == 2 && quotientMatches(values[0], values[1], target)
     }
 
@@ -140,8 +151,14 @@ object RuleEngine {
     fun expressionOf(values: List<Int>, kind: RuleKind): String = when (kind) {
         RuleKind.SUM -> values.joinToString(" + ") + " = " + values.sum()
         RuleKind.DIFF -> {
-            val hi = values.max(); val lo = values.min()
-            "$hi - $lo = ${hi - lo}"
+            if (values.size == 2) {
+                val hi = values.max(); val lo = values.min()
+                "$hi - $lo = ${hi - lo}"
+            } else {
+                val ordered = values.sortedDescending()
+                "${ordered[0]} - ${ordered[1]} - ${ordered[2]} = " +
+                    "${ordered[0] - ordered[1] - ordered[2]}"
+            }
         }
         RuleKind.PRODUCT -> values.joinToString(" × ") + " = " + values.reduce { a, b -> a * b }
         RuleKind.QUOTIENT -> {
@@ -165,8 +182,16 @@ object RuleEngine {
     fun failureMessage(values: List<Int>, kind: RuleKind, target: Int): String {
         val actual = when (kind) {
             RuleKind.SUM -> values.sum()
-            RuleKind.DIFF -> if (values.size == 2) abs(values[0] - values[1]) else 0
-            RuleKind.PRODUCT -> if (values.size == 2) values[0] * values[1] else 0
+            RuleKind.DIFF -> when (values.size) {
+                2 -> abs(values[0] - values[1])
+                3 -> values.sortedDescending().let { it[0] - it[1] - it[2] }
+                else -> 0
+            }
+            RuleKind.PRODUCT -> when (values.size) {
+                2 -> values[0] * values[1]
+                3 -> values[0] * values[1] * values[2]
+                else -> 0
+            }
             RuleKind.QUOTIENT -> {
                 val (dividend, divisor) = quotientPair(values)
                 if (divisor == 0) -1 else dividend / divisor
@@ -240,9 +265,36 @@ object RuleEngine {
      */
     fun operandsFor(kind: RuleKind, target: Int, groupSize: Int, random: Random): List<Int>? {
         if (groupSize !in 2..4) return null
-        if (kind != RuleKind.SUM && groupSize != 2) return null
+        if (kind == RuleKind.SUM && groupSize !in 2..4) return null
+        if (kind == RuleKind.DIFF && groupSize !in 2..3) return null
+        if (kind == RuleKind.PRODUCT && groupSize !in 2..3) return null
+        if (kind == RuleKind.QUOTIENT && groupSize != 2) return null
         val all = combosFor(kind, target, groupSize)
+        if (all.isEmpty()) return null
         return all[random.nextInt(all.size)].shuffled(random)
+    }
+
+    /**
+     * Bir tahtaya eşit sayıda yerleştirilebilecek kombinasyon seçkisi.
+     *
+     * 2'li gruplar için grup sayısı (groupCount), kombinasyon çeşidi sayısına tam bölünmelidir.
+     * Böylece 4 toplamında 0+4, 1+3 ve 2+2 aynı sayıda bulunur; 1+4 gibi tek bir çift tahtayı
+     * kaplamaz. Tam bölünmüyorsa çeşit sayısı, bölünebilen en büyük değere indirilir.
+     */
+    fun balancedCombos(
+        kind: RuleKind,
+        target: Int,
+        groupSize: Int,
+        groupCount: Int
+    ): List<List<Int>> {
+        val all = combosFor(kind, target, groupSize)
+        if (all.isEmpty() || groupCount <= 0 || groupCount % all.size == 0) return all
+        val usable = (minOf(all.size, groupCount) downTo 1).firstOrNull { groupCount % it == 0 }
+            ?: return all
+        if (usable == all.size) return all
+        // Destenin başından değil, tüm listeden eşit aralıklarla seç: büyük/küçük
+        // kombinasyonlar da tahtada görünsün.
+        return (0 until usable).map { i -> all[i * all.size / usable] }
     }
 
     /**
@@ -251,19 +303,60 @@ object RuleEngine {
      */
     fun combosFor(kind: RuleKind, target: Int, groupSize: Int): List<List<Int>> {
         if (kind == RuleKind.SUM) return sumCombos(target, groupSize)
-        if (groupSize != 2) return emptyList()
+        if (groupSize !in 2..3) return emptyList()
         return when (kind) {
-            RuleKind.DIFF -> (0..max(0, min(target + 8, 20))).map { small -> listOf(small + target, small) }
-            RuleKind.PRODUCT -> (1..12).mapNotNull { d ->
-                if (target % d == 0 && target / d <= 12) listOf(d, target / d) else null
-            }.distinctBy { it.sorted() }
-            RuleKind.QUOTIENT -> (1..10).mapNotNull { divisor ->
-                val dividend = target * divisor
-                if (dividend <= 99 && divisor > 0) listOf(dividend, divisor) else null
-            }.distinctBy { it.sorted() }
+            RuleKind.DIFF -> if (groupSize == 2) diffCombos(target) else diffTripleCombos(target)
+            RuleKind.PRODUCT -> if (groupSize == 2) productCombos(target) else productTripleCombos(target)
+            RuleKind.QUOTIENT -> if (groupSize == 2) quotientCombos(target) else emptyList()
             RuleKind.SUM -> emptyList()
         }
     }
+
+    /** Farkı hedefe eşit, 0..100 aralığındaki ikililer. */
+    private fun diffCombos(target: Int): List<List<Int>> =
+        (0..max(0, min(target + 8, 20))).map { small -> listOf(small + target, small) }
+
+    /** Üç sayıyla zincir çıkarma: büyük sayı − iki küçük sayı = hedef. */
+    private fun diffTripleCombos(target: Int): List<List<Int>> {
+        if (target < 0) return emptyList()
+        val out = mutableListOf<List<Int>>()
+        for (b in 1..20) {
+            for (c in 1..20) {
+                val a = target + b + c
+                if (a in 1..100) out.add(listOf(a, b, c).sorted())
+            }
+        }
+        return out.distinctBy { it }
+    }
+
+    /** Çarpımı hedefe eşit, 1..12 aralığındaki ikililer. */
+    private fun productCombos(target: Int): List<List<Int>> =
+        (1..12).mapNotNull { d ->
+            if (target % d == 0 && target / d <= 12) listOf(d, target / d) else null
+        }.distinctBy { it.sorted() }
+
+    /** Üç sayıyla çarpma: a × b × c = hedef. Sayılar 100'ü geçmez. */
+    private fun productTripleCombos(target: Int): List<List<Int>> {
+        if (target <= 0) return emptyList()
+        val out = mutableListOf<List<Int>>()
+        for (a in 1..12) {
+            if (target % a != 0) continue
+            val rest = target / a
+            for (b in 1..12) {
+                if (rest % b != 0) continue
+                val c = rest / b
+                if (c in 1..100) out.add(listOf(a, b, c).sorted())
+            }
+        }
+        return out.distinctBy { it }
+    }
+
+    /** Kalansız bölme ikilileri; bölünen 100'ü geçmez. */
+    private fun quotientCombos(target: Int): List<List<Int>> =
+        (1..10).mapNotNull { divisor ->
+            val dividend = target * divisor
+            if (dividend <= 100 && divisor > 0) listOf(dividend, divisor) else null
+        }.distinctBy { it.sorted() }
 
     /** Toplamı hedefe eşit, azalmayan tüm sayı üçlüleri/dörtlüleri. */
     private fun sumCombos(target: Int, size: Int): List<List<Int>> {

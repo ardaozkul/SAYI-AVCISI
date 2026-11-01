@@ -3,16 +3,16 @@ package com.sayiavcisi.app.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -33,8 +33,9 @@ enum class TileFlash {
 }
 
 /**
- * Sayı bloğu: beyaz yüzey, koyu rakam, yumuşak gölge.
- * Seçilince sarıdan turuncuya döner; doğru hamlede yeşil parlar, yanlışta kırmızı olup sarsılır.
+ * Sayı bloğu: krem yüzey, koyu rakam, ince gölge.
+ * Seçilince koyu orman yeşiline döner; doğru hamlede yeşil parlar, yanlışta kiremit
+ * kırmızısı olup sarsılır. Temizlenen taş, parlama süresince değerini göstermeye devam eder.
  */
 @Composable
 fun NumberTile(
@@ -45,45 +46,58 @@ fun NumberTile(
     palette: WorldPalette,
     modifier: Modifier = Modifier,
     appearDelayMillis: Int = 0,
+    animateAppear: Boolean = true,
     shakeTick: Int = 0,
     textSize: TextUnit = 24.sp
 ) {
-    val shape = RoundedCornerShape(16.dp)
-    val activeCell = cell?.takeIf { !it.isCleared }
-    val active = activeCell != null
+    val shape = RoundedCornerShape(14.dp)
+    val active = cell != null && !cell.isCleared
+    val flashingCleared = cell != null && cell.isCleared &&
+        (flash == TileFlash.Right || flash == TileFlash.Wrong)
+    val showNumber = cell != null && (active || flashingCleared)
 
     val face = when {
-        !active -> Color.White.copy(alpha = 0.28f)
         flash == TileFlash.Right -> GameVisuals.ok
         flash == TileFlash.Wrong -> GameVisuals.danger
-        isSelected -> null
+        isSelected && active -> null
+        active -> null
         else -> null
     }
 
     val base = modifier
-        .popIn(delayMillis = appearDelayMillis)
-        .scale(if (isSelected) 1.06f else 1f)
+        .then(if (animateAppear) Modifier.popIn(delayMillis = appearDelayMillis) else Modifier)
+        .scale(if (isSelected && active) 1.045f else 1f)
         .then(
-            if (active) {
-                Modifier
-                    .shadow(if (isSelected) 0.dp else 3.dp, shape)
+            when {
+                face != null -> Modifier
+                    .shadow(2.dp, shape)
+                    .background(face, shape)
+
+                active -> Modifier
+                    .shadow(3.dp, shape)
                     .background(
-                        brush = if (isSelected) GameVisuals.selectedBrush() else GameVisuals.tileBrush(palette),
+                        brush = if (isSelected) {
+                            GameVisuals.selectedBrush()
+                        } else {
+                            GameVisuals.tileBrush(palette)
+                        },
                         shape = shape
                     )
-            } else {
-                Modifier.background(color = face ?: Color.Transparent, shape = shape)
+
+                else -> Modifier.background(
+                    color = Color.White.copy(alpha = if (flashingCleared) 0.9f else 0.12f),
+                    shape = shape
+                )
             }
         )
-        .then(if (face != null) Modifier.background(face ?: Color.Transparent, shape) else Modifier)
         .border(
-            width = if (isSelected || flash != TileFlash.None) 2.5.dp else 1.dp,
+            width = if (isSelected || flash != TileFlash.None) 2.dp else 1.dp,
             color = when {
                 flash == TileFlash.Right -> GameVisuals.ok
                 flash == TileFlash.Wrong -> GameVisuals.danger
-                isSelected -> Color(0xFFFFB020)
-                active -> Color(0xFFEDE2CE)
-                else -> Color.White.copy(alpha = 0.35f)
+                isSelected -> GameVisuals.gold
+                active -> GameVisuals.line
+                else -> Color.White.copy(alpha = 0.2f)
             },
             shape = shape
         )
@@ -91,8 +105,8 @@ fun NumberTile(
             if (active && flash == TileFlash.Wrong) Modifier.shakeOnTrigger(shakeTick) else Modifier
         )
         .semantics {
-            contentDescription = if (activeCell != null) {
-                "Sayı ${activeCell.value}, satır ${activeCell.row + 1}, sütun ${activeCell.col + 1}" +
+            contentDescription = if (cell != null && (active || flashingCleared)) {
+                "Sayı ${cell.value}, satır ${cell.row + 1}, sütun ${cell.col + 1}" +
                     if (isSelected) ", seçili" else ""
             } else {
                 "Boş kare"
@@ -100,21 +114,26 @@ fun NumberTile(
         }
 
     Box(modifier = base, contentAlignment = Alignment.Center) {
-        if (activeCell != null) {
+        if (showNumber) {
             Text(
-                text = activeCell.value.toString(),
-                color = if (flash == TileFlash.Right || flash == TileFlash.Wrong) Color.White else palette.tileText,
+                text = cell.value.toString(),
+                color = if (flash == TileFlash.Right || flash == TileFlash.Wrong || isSelected) {
+                    Color(0xFFFFFCF4)
+                } else {
+                    palette.tileText
+                },
+                fontFamily = AppFonts.Display,
                 fontSize = textSize,
-                fontWeight = FontWeight.Black,
+                fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Center,
                 maxLines = 1
             )
         } else {
+            // Boş kare: dikkat çekmeyen küçük bir nokta.
             Box(
                 modifier = Modifier
-                    .scale(0.32f)
-                    .background(Color.White.copy(alpha = 0.55f), RoundedCornerShape(50))
-                    .padding(5.dp)
+                    .size(5.dp)
+                    .background(Color(0xFF1F2C26).copy(alpha = 0.10f), CircleShape)
             )
         }
         if (active && isHinted && flash == TileFlash.None) {
@@ -127,40 +146,39 @@ fun NumberTile(
     }
 }
 
-/** Alt çubuktaki yazılı düğme: sadece ikon değil, çocuğun okuyabileceği etiket. */
+/** Alt çubuktaki yazılı düğme: sade, okunaklı, ikon yerine metin. */
 @Composable
 fun TextActionButton(
     label: String,
-    emoji: String,
     palette: WorldPalette,
     modifier: Modifier = Modifier,
     filled: Boolean = false,
     onClick: () -> Unit
 ) {
-    val shape = RoundedCornerShape(16.dp)
-    Row(
+    val shape = RoundedCornerShape(14.dp)
+    Box(
         modifier = modifier
+            .height(44.dp)
             .background(
-                color = if (filled) palette.accent else palette.surface.copy(alpha = 0.92f),
+                color = if (filled) palette.accent else Color.Transparent,
                 shape = shape
             )
             .border(
-                width = 1.5.dp,
-                color = if (filled) palette.accentDeep else Color(0xFFE6DAC5),
+                width = 1.dp,
+                color = if (filled) palette.accentDeep else GameVisuals.line,
                 shape = shape
             )
             .clickable(onClick = onClick)
-            .alpha(0.98f)
-            .padding(horizontal = 14.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+            .padding(horizontal = 12.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Text(emoji, fontSize = 15.sp)
         Text(
             text = label,
-            color = if (filled) Color.White else palette.onSurface,
+            color = if (filled) Color(0xFFFFFCF4) else palette.onSurface,
+            fontFamily = AppFonts.Body,
             fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.2.sp,
             maxLines = 1
         )
     }

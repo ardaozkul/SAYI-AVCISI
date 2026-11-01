@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.platform.LocalConfiguration
 import com.sayiavcisi.app.audio.SoundEffectsManager
 import com.sayiavcisi.app.data.LocalProgressStorage
 import com.sayiavcisi.app.engine.CurriculumRepository
@@ -36,25 +37,46 @@ fun SayiAvcisiApp(storage: LocalProgressStorage) {
 
     SoundEffectsManager.isSoundEnabled = snapshot.soundEnabled
 
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+
     fun refresh() {
         snapshot = storage.loadSnapshot()
     }
 
+    /** Otomatik modda 10–11" tableti yatay, geniş tahtaya çevirir. */
+    fun effectiveColumns(preferred: Int): Int {
+        if (preferred > 0) return preferred
+        return when {
+            screenWidthDp >= 1000 -> 15
+            screenWidthDp >= 840 -> 12
+            screenWidthDp >= 700 -> 9
+            else -> 6
+        }
+    }
+
     fun startLevel(levelId: String, resume: Boolean) {
-        val spec = CurriculumRepository.levelById(levelId) ?: return
+        val base = CurriculumRepository.levelById(levelId) ?: return
         val progress = storage.loadSnapshot()
+        val spec = CurriculumRepository.withColumns(
+            base,
+            effectiveColumns(progress.boardColumns)
+        )
         val newSession = GameSession(
             spec = spec,
             bridge = StorageBridge(storage),
             timedMode = !progress.relaxedUntimedMode,
             extraTimeSeconds = progress.customTimeAdditionSeconds
         )
-        if (resume) {
-            storage.loadGameSnapshot(spec.levelId)?.let { newSession.restoreSnapshot(it) }
-        } else {
+        if (resume && !spec.endless) {
+            val saved = storage.loadGameSnapshot(spec.levelId)
+            if (saved != null && !newSession.restoreSnapshot(saved)) {
+                // Tahta genişliği değişmiş ya da kayıt bozulmuş: temiz bir tahta başlat.
+                storage.clearGameSnapshot(spec.levelId)
+            }
+        } else if (!spec.endless) {
             storage.clearGameSnapshot(spec.levelId)
         }
-        storage.saveLastActiveLevel(spec.levelId)
+        if (!spec.endless) storage.saveLastActiveLevel(spec.levelId)
         session = newSession
         route = Route.Game(spec.levelId)
     }
@@ -65,8 +87,12 @@ fun SayiAvcisiApp(storage: LocalProgressStorage) {
         if (current is Route.Game) {
             val active = session
             val spec = CurriculumRepository.levelById(current.levelId)
-            if (active != null && spec != null && !active.isFinished && !active.isTimeUp) {
-                storage.saveGameSnapshot(spec.levelId, active.encodeSnapshot())
+            if (active != null && spec != null) {
+                if (spec.endless) {
+                    active.finishEndless()
+                } else if (!active.isFinished && !active.isTimeUp) {
+                    storage.saveGameSnapshot(spec.levelId, active.encodeSnapshot())
+                }
             }
             route = Route.Map
         } else {
@@ -79,7 +105,8 @@ fun SayiAvcisiApp(storage: LocalProgressStorage) {
         Route.Start -> StartScreen(
             dailyScore = snapshot.dailyScore,
             completedCount = ProgressRules.completedLevelCount(snapshot.completedLevelIds),
-            totalLevels = CurriculumRepository.allLevels.size,
+            totalLevels = CurriculumRepository.standardLevels.size,
+            endlessBestScore = snapshot.endlessBestScore,
             resumeLevelId = snapshot.lastActiveLevelId?.takeIf { id ->
                 storage.loadGameSnapshot(id) != null
             },
@@ -100,6 +127,8 @@ fun SayiAvcisiApp(storage: LocalProgressStorage) {
 
         Route.Map -> AdventureMapScreen(
             completedLevelIds = snapshot.completedLevelIds,
+            boardColumns = effectiveColumns(snapshot.boardColumns),
+            endlessBestScore = snapshot.endlessBestScore,
             onLevelClick = { spec -> startLevel(spec.levelId, resume = true) },
             onBack = {
                 refresh()
@@ -112,11 +141,16 @@ fun SayiAvcisiApp(storage: LocalProgressStorage) {
             val spec = CurriculumRepository.levelById(current.levelId)
             if (active != null && spec != null) {
                 GameScreen(
-                    spec = spec,
+                    spec = active.spec,
                     session = active,
                     dailyScore = storage.dailyNetScore(),
+                    endlessBestScore = snapshot.endlessBestScore,
                     onBack = {
-                        if (!active.isFinished) storage.saveGameSnapshot(spec.levelId, active.encodeSnapshot())
+                        if (active.isEndless) {
+                            active.finishEndless()
+                        } else if (!active.isFinished) {
+                            storage.saveGameSnapshot(spec.levelId, active.encodeSnapshot())
+                        }
                         storage.addPlayTimeSeconds(0)
                         refresh()
                         route = Route.Map
@@ -130,7 +164,11 @@ fun SayiAvcisiApp(storage: LocalProgressStorage) {
                             startLevel(nextId, resume = false)
                         }
                     },
-                    onReplay = { startLevel(spec.levelId, resume = false) },
+                    onReplay = { startLevel(active.spec.levelId, resume = false) },
+                    onFinishEndless = {
+                        active.finishEndless()
+                        refresh()
+                    },
                     onPlaySecond = { storage.addPlayTimeSeconds(1) }
                 )
                 // Oyunda kaldığımız sürece puan/ilerleme ekranı canlı kalsın.
@@ -153,6 +191,10 @@ fun SayiAvcisiApp(storage: LocalProgressStorage) {
             },
             onTimeExtension = { extra ->
                 storage.setCustomTimeAdditionSeconds(extra)
+                refresh()
+            },
+            onBoardColumns = { columns ->
+                storage.setBoardColumns(columns)
                 refresh()
             },
             onResetDailyScore = {
@@ -201,6 +243,10 @@ private class StorageBridge(private val storage: LocalProgressStorage) : GameSes
 
     override fun clearSnapshot() {
         storage.loadSnapshot().lastActiveLevelId?.let { storage.clearGameSnapshot(it) }
+    }
+
+    override fun recordEndlessResult(score: Int, missions: Int, bestStreak: Int) {
+        storage.recordEndlessResult(score, missions, bestStreak)
     }
 
     private fun encodedLevelId(encoded: String): String? = encoded.split("|").getOrNull(1)

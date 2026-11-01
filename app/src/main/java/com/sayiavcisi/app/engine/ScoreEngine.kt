@@ -31,7 +31,7 @@ object ScoreEngine {
             RuleKind.PRODUCT -> 6
             RuleKind.QUOTIENT -> 7
         }
-        val raw = base + comboBonus(groupSize) + sizeBonus(spec.gridSize) + streakBonus(streak)
+        val raw = base + comboBonus(groupSize) + sizeBonus(spec.totalCells) + streakBonus(streak)
         return if (doubleNext) raw * 2 else raw
     }
 
@@ -42,10 +42,30 @@ object ScoreEngine {
         else -> 0
     }
 
+    /**
+     * Sonsuz Av'da kazanılan YEŞİL puan.
+     * Normal bölümlerin sarı puanından ayrı tutulur; günlük tavana bağlı değildir.
+     */
+    fun endlessMissionPoints(kind: RuleKind, groupSize: Int, streak: Int): Int {
+        val base = when (kind) {
+            RuleKind.SUM -> 8
+            RuleKind.DIFF -> 10
+            RuleKind.PRODUCT -> 12
+            RuleKind.QUOTIENT -> 9
+        }
+        val combo = when (groupSize) {
+            3 -> 6
+            4 -> 12
+            else -> 0
+        }
+        return base + combo + streakBonus(streak)
+    }
+
     /** Büyük tahtalarda avlamak biraz daha değerli. */
-    fun sizeBonus(gridSize: Int): Int = when (gridSize) {
-        in 8..10 -> 2
-        in 6..7 -> 1
+    fun sizeBonus(totalCells: Int): Int = when {
+        totalCells >= 200 -> 6
+        totalCells >= 50 -> 2
+        totalCells >= 36 -> 1
         else -> 0
     }
 
@@ -63,7 +83,7 @@ object ScoreEngine {
 
     /** Bölüm bitirme ödülü: altın ve (kusursuzsa) elmas. */
     fun completionRewards(spec: LevelSpec, flawless: Boolean, usedRescue: Boolean): Pair<Int, Int> {
-        val gold = 10 + spec.gridSize + spec.stageIndex
+        val gold = 10 + (spec.totalCells / 10) + spec.stageIndex
         val diamonds = when {
             flawless && !usedRescue -> 2
             flawless -> 1

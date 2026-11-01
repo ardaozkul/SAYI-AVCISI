@@ -1,7 +1,7 @@
 package com.sayiavcisi.app.model
 
 /**
- * SAYI AVCISI 2.0 veri modeli.
+ * SAYI AVCISI 3.1 veri modeli.
  *
  * Temel ilke: BİR BÖLÜM = TEK HEDEF.
  * Tahtadaki her blok grubu aynı hedefi sağlar; çocuk hangi geçerli grubu seçerse seçsin
@@ -22,7 +22,7 @@ enum class RuleKind(val operation: OperationType, val unitLabel: String) {
     PRODUCT(OperationType.MULTIPLICATION, "çarpım"),
     QUOTIENT(OperationType.DIVISION, "bölüm");
 
-    /** Bu hedef türünde sıranın önemli olup olmadığı. 2.0'da hiçbir hedef sıra gerektirmez. */
+    /** Bu hedef türünde sıranın önemli olup olmadığı. Hiçbir hedef sıra gerektirmez. */
     val orderFree: Boolean get() = true
 }
 
@@ -63,23 +63,31 @@ data class LevelSpec(
     val segmentLabel: String,
     val minutes: Int,
     val worldKey: String,
-    val gridSize: Int,
+    /** Tahtadaki sütun sayısı. Oyun her zaman 6 sütun kullanır. */
+    val cols: Int,
+    /** Tahtadaki satır sayısı: 6 (genel), 10 (kolay) veya 50 (uzun final). */
+    val rows: Int,
     val ruleKind: RuleKind,
     val target: Int,
     /** Bir eşleşmede kullanılan blok sayıları. Toplamada [2, 3, 4]; diğer işlemlerde yalnızca [2]. */
     val groupSizes: List<Int>,
     val ruleMode: MatchRuleMode = MatchRuleMode.LINE_OF_SIGHT,
     val timeLimitSeconds: Int? = null,
-    val focusZero: Boolean = false
+    val focusZero: Boolean = false,
+    /** Sonsuz Av: hedef sabit değil, her doğru hamlede yeni görev gelir ve temizlenen kare yenilenir. */
+    val endless: Boolean = false
 ) {
     val operation: OperationType get() = ruleKind.operation
-    val totalCells: Int get() = gridSize * gridSize
+    val totalCells: Int get() = rows * cols
+    val isLong: Boolean get() = rows >= 20
+    val isEasyBoard: Boolean get() = rows == 10
     val plannedMoveCount: Int get() = if (totalCells % 3 == 0) totalCells / 3 else totalCells / 2
 }
 
 /** Üretilen tahta: bloklar + üreticinin bildiği garantili çözüm planı. */
 data class Board(
-    val gridSize: Int,
+    val rows: Int,
+    val cols: Int,
     val cells: List<BlockCell>,
     val plan: List<List<Pair<Int, Int>>>,
     val ruleMode: MatchRuleMode,
@@ -88,6 +96,7 @@ data class Board(
     fun activeCells(): List<BlockCell> = cells.filterNot { it.isCleared }
     fun activeCoords(): Set<Pair<Int, Int>> = activeCells().map { it.coord }.toSet()
     fun isCleared(): Boolean = cells.none { !it.isCleared }
+    fun cellAt(coord: Pair<Int, Int>): BlockCell? = cells.firstOrNull { it.coord == coord }
 }
 
 enum class JokerType(
@@ -112,3 +121,22 @@ data class MatchResult(
     /** Doğru hamlede seçilen taş sayısı (3 ve 4 için kombo kutlaması). */
     val comboSize: Int = 0
 )
+
+/**
+ * Sonsuz Av'da anlık görev.
+ *
+ * - Toplama en az 4 sayı ister.
+ * - Çıkarma ve çarpma 3 sayıyla yapılır.
+ * - Bölme 2 sayıyla yapılır.
+ * [seedOperands] tahtada görevin hemen oynanabilmesi için yerleştirilen örnek sayılardır.
+ */
+data class EndlessMission(
+    val kind: RuleKind,
+    val target: Int,
+    val groupSizes: List<Int>,
+    val title: String,
+    val seedOperands: List<Int>
+) {
+    val symbol: String get() = kind.operation.symbol
+    val groupSize: Int get() = groupSizes.firstOrNull() ?: 2
+}

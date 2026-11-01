@@ -28,8 +28,23 @@ object BoardDoctor {
             mode = board.ruleMode
         )
 
-    fun hint(board: Board, spec: LevelSpec): List<Pair<Int, Int>>? =
-        validMoves(board, spec).firstOrNull()
+    /**
+     * Önce üreticinin garantili planına bakar; 6×50 tahtada bile ipucu anında gelir.
+     * Plan bozulduysa tüm geçerli hamleleri arar.
+     */
+    fun hint(board: Board, spec: LevelSpec): List<Pair<Int, Int>>? {
+        val active = board.activeCoords()
+        for (group in board.plan) {
+            if (group.size !in BoardBuilder.allowedSizesFor(spec)) continue
+            if (!group.all { active.contains(it) }) continue
+            val values = group.mapNotNull { board.cellAt(it)?.value }
+            if (values.size != group.size) continue
+            if (!RuleEngine.mathMatches(values, spec.ruleKind, spec.target)) continue
+            if (RuleEngine.geometryProblem(group, active, board.ruleMode) != null) continue
+            return group
+        }
+        return validMoves(board, spec).firstOrNull()
+    }
 
     fun hasAnyMove(board: Board, spec: LevelSpec): Boolean =
         board.isCleared() || hint(board, spec) != null
@@ -58,7 +73,8 @@ object BoardDoctor {
             BlockCell(id = clearedCells.size + index, row = coord.first, col = coord.second, value = value)
         }
         val rebuilt = Board(
-            gridSize = board.gridSize,
+            rows = board.rows,
+            cols = board.cols,
             cells = clearedCells + newActive,
             plan = groups,
             ruleMode = board.ruleMode,
@@ -127,7 +143,7 @@ object BoardDoctor {
         val groups = mutableListOf<List<Pair<Int, Int>>>()
         val leftovers = mutableListOf<Pair<Int, Int>>()
 
-        for (r in 0 until board.gridSize) {
+        for (r in 0 until board.rows) {
             val rowCells = active.filter { it.first == r }.sortedBy { it.second }
             var i = 0
             while (i < rowCells.size) {
@@ -183,22 +199,22 @@ object BoardDoctor {
     ): Pair<Int, Int>? {
         val candidates = ArrayList<Pair<Int, Int>>()
         for (dc in listOf(1, -1)) {
-            for (dist in 1 until board.gridSize) {
+            for (dist in 1 until board.cols) {
                 val c = cell.second + dc * dist
-                if (c in 0 until board.gridSize) candidates.add(cell.first to c)
+                if (c in 0 until board.cols) candidates.add(cell.first to c)
             }
         }
         for (dr in listOf(1, -1)) {
-            for (dist in 1 until board.gridSize) {
+            for (dist in 1 until board.rows) {
                 val r = cell.first + dr * dist
-                if (r in 0 until board.gridSize) candidates.add(r to cell.second)
+                if (r in 0 until board.rows) candidates.add(r to cell.second)
             }
         }
         for (d in listOf(1 to 1, 1 to -1, -1 to 1, -1 to -1)) {
-            for (dist in 1 until board.gridSize) {
+            for (dist in 1 until maxOf(board.rows, board.cols)) {
                 val r = cell.first + d.first * dist
                 val c = cell.second + d.second * dist
-                if (r in 0 until board.gridSize && c in 0 until board.gridSize) candidates.add(r to c)
+                if (r in 0 until board.rows && c in 0 until board.cols) candidates.add(r to c)
             }
         }
         return candidates.firstOrNull { !occupied.contains(it) && geometryClear(listOf(cell, it), occupied + it) }

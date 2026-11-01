@@ -32,6 +32,7 @@ private class FakeBridge : GameSession.ProgressBridge {
     var snapshot: String? = null
     val completedLevels = mutableSetOf<String>()
     val attempts = mutableListOf<Pair<Boolean, List<Int>>>()
+    val endlessRecords = mutableListOf<Triple<Int, Int, Int>>()
 
     val net: Int get() = (gross - spent).coerceAtLeast(0)
 
@@ -69,6 +70,10 @@ private class FakeBridge : GameSession.ProgressBridge {
 
     override fun clearSnapshot() {
         snapshot = null
+    }
+
+    override fun recordEndlessResult(score: Int, missions: Int, bestStreak: Int) {
+        endlessRecords.add(Triple(score, missions, bestStreak))
     }
 }
 
@@ -123,17 +128,49 @@ class EngineRulesTest {
 
     @Test
     fun tahtayaKombinasyonlarEsitDagitilir() {
-        val base = CurriculumRepository.levelById("A4")!!
-        val spec = base.copy(gridSize = 4, groupSizes = listOf(2))
+        val spec = CurriculumRepository.levelById("A4")!!
         val board = BoardBuilder.build(spec, Random(5), 5)
-        val pairs = board.plan.map { group ->
+        val pairs = board.plan.filter { it.size == 2 }.map { group ->
             group.map { coord -> board.cells.first { it.coord == coord }.value }.sorted()
-        }.toSet()
+        }
         assertEquals(
             "0+4, 1+3 ve 2+2 aynı tahtada bulunmalı",
             RuleEngine.combosFor(RuleKind.SUM, 4, 2).map { it.sorted() }.toSet(),
-            pairs
+            pairs.toSet()
         )
+        val counts = pairs.groupingBy { it }.eachCount()
+        assertEquals("her 2'li kombinasyon eşit sayıda olmalı", 1, counts.values.distinct().size)
+    }
+
+    @Test
+    fun rastgeleTohumlardaTahtaTamamenDolu() {
+        for (spec in listOf(CurriculumRepository.levelById("A7")!!, CurriculumRepository.levelById("A30")!!)) {
+            repeat(10000) { seed ->
+                val board = BoardBuilder.build(spec, Random(seed), seed)
+                assertEquals(
+                    "${spec.levelId} seed $seed boş blok bırakmamalı",
+                    spec.totalCells,
+                    board.activeCells().size
+                )
+            }
+        }
+    }
+
+    @Test
+    fun butunBolumlerdeIkiliKombinasyonlarEsitSayida() {
+        for (spec in CurriculumRepository.standardLevels) {
+            val board = BoardBuilder.build(spec, Random(spec.stageIndex + 11), spec.stageIndex + 11)
+            val twoGroups = board.plan.filter { it.size == 2 }
+            if (twoGroups.isEmpty()) continue
+            val counts = twoGroups.groupingBy { group ->
+                group.map { coord -> board.cells.first { it.coord == coord }.value }.sorted()
+            }.eachCount()
+            assertEquals(
+                "${spec.levelId}: ${counts.values.toList()}",
+                1,
+                counts.values.distinct().size
+            )
+        }
     }
 
     @Test
@@ -150,11 +187,24 @@ class EngineRulesTest {
     @Test
     fun dortBlokluGrupYalnizcaToplamada() {
         assertNull(RuleEngine.operandsFor(RuleKind.DIFF, 3, 4, Random(1)))
-        assertNull(RuleEngine.operandsFor(RuleKind.PRODUCT, 12, 3, Random(1)))
+        assertNull(RuleEngine.operandsFor(RuleKind.QUOTIENT, 4, 3, Random(1)))
+        val threeProduct = RuleEngine.operandsFor(RuleKind.PRODUCT, 12, 3, Random(1))
+        assertNotNull(threeProduct)
+        assertEquals(3, threeProduct!!.size)
+        assertEquals(12, threeProduct.reduce { a, b -> a * b })
         val four = RuleEngine.operandsFor(RuleKind.SUM, 9, 4, Random(1))
         assertNotNull(four)
         assertEquals(4, four!!.size)
         assertEquals(9, four.sum())
+    }
+
+    @Test
+    fun ucSayiliCikarmaVeCarpmaKurallari() {
+        assertTrue(RuleEngine.mathMatches(listOf(9, 4, 2), RuleKind.DIFF, 3))
+        assertTrue(RuleEngine.mathMatches(listOf(2, 9, 4), RuleKind.DIFF, 3))
+        assertFalse(RuleEngine.mathMatches(listOf(9, 4, 2), RuleKind.DIFF, 5))
+        assertTrue(RuleEngine.mathMatches(listOf(2, 3, 4), RuleKind.PRODUCT, 24))
+        assertFalse(RuleEngine.mathMatches(listOf(2, 3, 4), RuleKind.PRODUCT, 12))
     }
 
     // ---- GEOMETRİ: komşuluk, düz ve çapraz ---------------------------------------------
@@ -201,12 +251,12 @@ class EngineRulesTest {
 
     @Test
     fun herBolumTahtasiTamamenKapanirVeHerGrupTekHedefiSaglar() {
-        for (spec in CurriculumRepository.allLevels) {
+        for (spec in CurriculumRepository.standardLevels) {
             for (seed in listOf(1, 42)) {
                 val board = BoardBuilder.build(spec, Random(seed), seed)
                 val covered = board.plan.flatten()
                 assertEquals("plan hücreleri tekil olmalı (${spec.levelId})", covered.size, covered.distinct().size)
-                assertEquals("${spec.levelId} tahtası eksiksiz planlanmalı", spec.gridSize * spec.gridSize, covered.size)
+                assertEquals("${spec.levelId} tahtası eksiksiz planlanmalı", spec.totalCells, covered.size)
 
                 for (group in board.plan) {
                     assertTrue(
@@ -231,7 +281,7 @@ class EngineRulesTest {
 
     @Test
     fun planSirasiTakipEdilinceTahtaTamamenTemizlenir() {
-        for (spec in CurriculumRepository.allLevels) {
+        for (spec in CurriculumRepository.standardLevels) {
             val s = session(spec, seed = spec.stageIndex * 97 + spec.dayNumber)
             for (group in s.board.plan) {
                 play(s, group)
@@ -243,7 +293,7 @@ class EngineRulesTest {
 
     @Test
     fun rastgeleOynandigindaAslaTikanilmaz() {
-        for (spec in CurriculumRepository.allLevels) {
+        for (spec in CurriculumRepository.standardLevels) {
             val s = session(spec, seed = 2026)
             val rng = Random(2026)
             var guard = 0
@@ -284,7 +334,8 @@ class EngineRulesTest {
             segmentLabel = "+",
             minutes = 5,
             worldKey = "toplama",
-            gridSize = 4,
+            cols = 4,
+            rows = 4,
             ruleKind = RuleKind.SUM,
             target = 6,
             groupSizes = listOf(4)
@@ -349,7 +400,7 @@ class EngineRulesTest {
                 cells.add(BlockCell(id = r * 6 + c, row = r, col = c, value = 9))
             }
         }
-        val stuck = Board(gridSize = 6, cells = cells, plan = emptyList(), ruleMode = MatchRuleMode.LINE_OF_SIGHT, seed = 1)
+        val stuck = Board(rows = 6, cols = 6, cells = cells, plan = emptyList(), ruleMode = MatchRuleMode.LINE_OF_SIGHT, seed = 1)
         val s = session(spec)
         s.board = stuck
         assertNull(BoardDoctor.hint(s.board, spec))
@@ -388,6 +439,9 @@ class EngineRulesTest {
             fresh.board.activeCells().map { "${it.row}:${it.col}:${it.value}" }.sorted()
         )
         assertFalse(fresh.restoreSnapshot("bozuk-kayit"))
+        val wideSpec = CurriculumRepository.withColumns(spec, 12)
+        val wide = session(wideSpec, seed = 99)
+        assertFalse("Farklı sütun sayısındaki kayıt yüklenmemeli", wide.restoreSnapshot(encoded))
     }
 
     @Test
@@ -405,17 +459,21 @@ class EngineRulesTest {
 
     @Test
     fun dortBolumVeArdisikToplamaHedefleri() {
-        assertEquals(4, CurriculumRepository.dayCount)
+        assertEquals(5, CurriculumRepository.dayCount)
         val sums = CurriculumRepository.levelsForDay(1)
         assertEquals(30, sums.size)
         assertEquals((1..30).toList(), sums.map { it.target })
-        assertEquals(4, sums.first().gridSize)
-        assertEquals(4, sums[2].gridSize)
-        assertEquals(6, sums[3].gridSize)
-        assertEquals(6, sums.last().gridSize)
+        assertEquals(6, sums.first().cols)
+        assertEquals(10, sums.first().rows)
+        assertEquals(10, sums[2].rows)
+        assertEquals(6, sums[3].rows)
+        assertEquals(50, sums.last().rows)
+        assertEquals(300, sums.last().totalCells)
         assertEquals(listOf(2), sums.first().groupSizes)
         assertEquals(listOf(2, 3), CurriculumRepository.levelById("A7")!!.groupSizes)
         assertEquals(listOf(2, 3, 4), CurriculumRepository.levelById("A10")!!.groupSizes)
+        assertTrue(CurriculumRepository.endlessLevel.endless)
+        assertEquals(100, CurriculumRepository.endlessLevel.rows)
     }
 
     @Test
@@ -425,7 +483,9 @@ class EngineRulesTest {
         assertEquals(16, CurriculumRepository.levelsForDay(3).size)
         assertTrue(CurriculumRepository.levelsForDay(3).any { it.target == 36 })
         assertEquals(8, CurriculumRepository.levelsForDay(4).size)
-        assertEquals(66, CurriculumRepository.allLevels.size)
+        assertEquals(66, CurriculumRepository.standardLevels.size)
+        assertEquals(67, CurriculumRepository.allLevels.size)
+        assertEquals(1, CurriculumRepository.levelsForDay(5).size)
         // Her bölüm açık: çarpım tablosunu denemek için kilit yok.
         for (spec in CurriculumRepository.allLevels) {
             assertTrue(ProgressRules.isLevelUnlocked(spec, emptySet()))
@@ -451,6 +511,61 @@ class EngineRulesTest {
         val board = BoardBuilder.build(spec, Random(4), 4)
         assertTrue(board.cells.any { it.value == 0 })
         assertTrue(board.cells.all { it.value in 0..spec.target })
+    }
+
+    // ---- SONSUZ AV + TABLET TAHTASI ----------------------------------------------------
+
+    @Test
+    fun sonsuzAvGoreviAnindaOynanirVeYenilenir() {
+        val spec = CurriculumRepository.endlessLevel.copy(cols = 6)
+        val s = GameSession(spec, FakeBridge(), 77)
+        assertEquals(600, s.board.cells.size)
+        assertEquals(600, s.board.activeCells().size)
+        assertTrue(s.board.cells.all { it.value in 1..100 })
+
+        val mission = s.mission
+        assertNotNull(mission)
+        val expectedSize = when (mission!!.kind) {
+            RuleKind.SUM -> 4
+            RuleKind.DIFF, RuleKind.PRODUCT -> 3
+            RuleKind.QUOTIENT -> 2
+        }
+        assertEquals(expectedSize, mission.groupSize)
+        assertEquals(expectedSize, s.missionCoords.size)
+        assertTrue("Görev üst satırlarda olmalı", s.missionCoords.all { it.first < 10 })
+        val values = s.missionCoords.map { s.board.cellAt(it)!!.value }
+        assertTrue(RuleEngine.mathMatches(values, mission.kind, mission.target))
+
+        val result = play(s, s.missionCoords)
+        assertTrue(result.accepted)
+        assertEquals(1, s.missionsSolved)
+        assertTrue(s.endlessScore > 0)
+        assertEquals(600, s.board.activeCells().size)
+        assertEquals(600, s.board.cells.size)
+        assertTrue(s.board.cells.all { !it.isCleared && it.value in 1..100 })
+        assertTrue(s.mission!!.kind != mission.kind)
+        assertTrue("Yeni görev de üst satırlarda olmalı", s.missionCoords.all { it.first < 10 })
+
+        s.finishEndless()
+        val record = fakeBridgeOf(s).endlessRecords.single()
+        assertEquals(s.endlessScore, record.first)
+        assertEquals(1, record.second)
+    }
+
+    @Test
+    fun tabletSutunlariTahtayiTamamenKapatir() {
+        for (id in listOf("A1", "A7", "S4", "M6", "B4")) {
+            val base = CurriculumRepository.levelById(id)!!
+            val spec = CurriculumRepository.withColumns(base, 15)
+            val board = BoardBuilder.build(spec, Random(3), 3)
+            assertEquals("${spec.levelId} ${spec.cols}×${spec.rows}", spec.totalCells, board.activeCells().size)
+            assertTrue(
+                "${spec.levelId} planı kurala uygun olmalı",
+                board.plan.all { it.size in BoardBuilder.allowedSizesFor(spec) }
+            )
+        }
+        assertEquals(14, CurriculumRepository.withColumns(CurriculumRepository.levelById("S4")!!, 15).cols)
+        assertEquals(15, CurriculumRepository.withColumns(CurriculumRepository.levelById("A7")!!, 15).cols)
     }
 
     // ---- yardımcılar -------------------------------------------------------------------

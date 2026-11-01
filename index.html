@@ -4,30 +4,43 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SAYI AVCISI — Çocuklar İçin Sayı Avlama Oyunu (Android APK)</title>
-<meta name="description" content="SAYI AVCISI: toplama, çıkarma, çarpma ve bölmeyi oynayarak öğreten, %100 çevrimdışı Android oyunu. APK'yı indir, kur ve oyna." />
+<meta name="description" content="SAYI AVCISI: toplama, çıkarma, çarpma ve bölmeyi oynayarak öğreten, %100 çevrimdışı Android oyunu. 6×100 Sonsuz Av, tablet tahtaları ve ayrı yeşil puan. APK'yı indir, kur ve oyna." />
 <style>
+  @font-face {
+    font-family: "Bricolage";
+    src: url("app/src/main/res/font/bricolage_grotesque.ttf") format("truetype");
+    font-weight: 200 800;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Public Sans";
+    src: url("app/src/main/res/font/public_sans.ttf") format("truetype");
+    font-weight: 100 900;
+    font-display: swap;
+  }
+
   :root {
-    --cream: #fffbf3;
-    --cream-2: #f4e9d7;
-    --white: #ffffff;
-    --ink: #26243a;
-    --muted: #7a8091;
-    --line: #ecdfc9;
-    --orange: #ff8a3d;
-    --orange-deep: #e3691a;
-    --blue: #4c8dff;
-    --purple: #9b6bff;
-    --teal: #1fb6a6;
-    --green: #16a34a;
-    --red: #dc2626;
-    --gold: #f59e0b;
+    --paper: #f7f3ea;
+    --paper-2: #ede7da;
+    --surface: #fffcf5;
+    --ink: #1d272b;
+    --muted: #6c756f;
+    --line: #d8d2c4;
+    --navy: #2c4a63;
+    --navy-deep: #1e3548;
+    --sage: #2e7d5b;
+    --green-point: #26805a;
+    --gold: #b9963e;
+    --plum: #5c3b52;
+    --slate: #3a4e7a;
+    --danger: #a64b42;
     --radius: 22px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body {
-    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-    background: var(--cream);
+    font-family: "Public Sans", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    background: var(--paper);
     color: var(--ink);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
@@ -38,33 +51,39 @@
   /* HEADER */
   header {
     position: sticky; top: 0; z-index: 20;
-    background: rgba(255, 251, 243, 0.92);
+    background: rgba(247, 243, 234, 0.94);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--line);
   }
   .nav { display: flex; align-items: center; gap: 22px; padding: 14px 0; }
-  .brand { font-weight: 900; letter-spacing: 1.5px; font-size: 17px; text-decoration: none; }
-  .brand span { color: var(--orange-deep); }
+  .brand {
+    font-family: "Bricolage", "Public Sans", system-ui, sans-serif;
+    font-weight: 800; letter-spacing: 1.4px; font-size: 17px; text-decoration: none;
+  }
+  .brand span { color: var(--navy); }
   .nav-links { display: flex; gap: 20px; margin-left: auto; }
   .nav-links a { text-decoration: none; font-size: 14px; font-weight: 600; color: var(--muted); }
   .nav-links a:hover { color: var(--ink); }
   .nav .mini-cta {
-    background: var(--orange); color: #fff; text-decoration: none;
+    background: var(--navy); color: #fff; text-decoration: none;
     padding: 9px 16px; border-radius: 12px; font-weight: 800; font-size: 13px;
-    border: 1px solid var(--orange-deep);
+    border: 1px solid var(--navy-deep);
   }
 
   /* HERO */
   .hero { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; padding: 64px 0 48px; }
   .eyebrow {
     display: inline-flex; align-items: center; gap: 7px;
-    background: #fff2df; color: #a45512; border: 1px solid #f3cfa2;
+    background: #e7eee7; color: var(--navy); border: 1px solid #c3d1c6;
     border-radius: 999px; padding: 6px 13px; font-size: 12.5px; font-weight: 700;
     margin-bottom: 18px;
   }
-  h1 { font-size: clamp(38px, 6vw, 60px); line-height: 1.02; letter-spacing: -1px; font-weight: 900; }
-  h1 em { color: var(--orange-deep); font-style: normal; }
-  .lede { color: var(--muted); font-size: 17px; max-width: 480px; margin: 18px 0 26px; }
+  h1 {
+    font-family: "Bricolage", "Public Sans", system-ui, sans-serif;
+    font-size: clamp(38px, 6vw, 60px); line-height: 1.02; letter-spacing: -1px; font-weight: 800;
+  }
+  h1 em { color: var(--navy); font-style: normal; }
+  .lede { color: var(--muted); font-size: 17px; max-width: 500px; margin: 18px 0 26px; }
   .cta-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
   .btn {
     display: inline-flex; align-items: center; gap: 9px; text-decoration: none;
@@ -73,34 +92,34 @@
   }
   .btn:hover { transform: translateY(-2px); }
   .btn-primary {
-    color: #fff; background: linear-gradient(180deg, var(--orange), var(--orange-deep));
-    border: 1px solid #c95f12; box-shadow: 0 10px 22px rgba(227, 105, 26, 0.25);
+    color: #fff; background: linear-gradient(180deg, #355873, var(--navy-deep));
+    border: 1px solid #172a38; box-shadow: 0 10px 22px rgba(30, 53, 72, 0.22);
   }
-  .btn-ghost { color: var(--ink); background: #fff; border: 1px solid var(--line); }
+  .btn-ghost { color: var(--ink); background: var(--surface); border: 1px solid var(--line); }
   .btn-small { padding: 11px 16px; font-size: 14px; border-radius: 13px; }
 
   .phone {
     position: relative; width: min(310px, 100%); margin: 0 auto;
-    background: #1e1b2e; border-radius: 38px; padding: 10px;
-    box-shadow: 0 26px 50px rgba(72, 55, 29, 0.22), 0 3px 0 rgba(255,255,255,.25) inset;
+    background: #1d272b; border-radius: 38px; padding: 10px;
+    box-shadow: 0 26px 50px rgba(29, 39, 43, 0.24), 0 3px 0 rgba(255,255,255,.18) inset;
     transform: rotate(-1.2deg);
   }
   .phone::after {
     content: ""; position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%);
-    width: 92px; height: 4px; background: #4a4560; border-radius: 9px;
+    width: 92px; height: 4px; background: #4a5458; border-radius: 9px;
   }
   .phone img { width: 100%; display: block; border-radius: 29px; }
 
   /* APK ADDRESS */
   .address-card {
-    margin-top: 26px; background: #fff8ea; border: 1px dashed #eccb98;
+    margin-top: 26px; background: #f3eee3; border: 1px dashed #c9c2b2;
     border-radius: 16px; padding: 14px 16px; max-width: 500px;
   }
-  .address-card b { font-size: 13px; color: #8a5516; }
+  .address-card b { font-size: 13px; color: #4a5b52; }
   .address-card code {
-    display: block; margin-top: 6px; background: #fff; border: 1px solid #f0ddbd;
+    display: block; margin-top: 6px; background: var(--surface); border: 1px solid #ddd6c7;
     border-radius: 10px; padding: 8px 10px; font-family: Consolas, ui-monospace, monospace;
-    font-size: 12px; color: #3f3425; overflow-wrap: anywhere;
+    font-size: 12px; color: #28343a; overflow-wrap: anywhere;
   }
 
   /* SECTION BASICS */
@@ -108,106 +127,130 @@
   .section-head { margin-bottom: 26px; }
   .kicker {
     text-transform: uppercase; letter-spacing: 2.4px; font-size: 11px; font-weight: 800;
-    color: var(--orange-deep); margin-bottom: 6px;
+    color: var(--sage); margin-bottom: 6px;
   }
-  h2 { font-size: clamp(25px, 3.4vw, 33px); letter-spacing: -.5px; line-height: 1.18; }
-  .section-head p { color: var(--muted); max-width: 620px; margin-top: 8px; }
+  h2 {
+    font-family: "Bricolage", "Public Sans", system-ui, sans-serif;
+    font-size: clamp(25px, 3.4vw, 33px); letter-spacing: -.5px; line-height: 1.18; font-weight: 800;
+  }
+  .section-head p { color: var(--muted); max-width: 640px; margin-top: 8px; }
 
   /* STEPS */
   .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   .step {
-    background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
     padding: 22px;
   }
   .step .num {
     width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center;
     font-weight: 900; color: #fff; margin-bottom: 14px; font-size: 15px;
   }
-  .step:nth-child(1) .num { background: var(--orange); }
-  .step:nth-child(2) .num { background: var(--blue); }
-  .step:nth-child(3) .num { background: var(--green); }
+  .step:nth-child(1) .num { background: var(--navy); }
+  .step:nth-child(2) .num { background: var(--slate); }
+  .step:nth-child(3) .num { background: var(--sage); }
   .step h3 { font-size: 17px; margin-bottom: 6px; }
   .step p { color: var(--muted); font-size: 14px; }
   .step .example {
-    margin-top: 12px; background: var(--cream); border: 1px solid var(--line);
-    border-radius: 12px; padding: 9px 11px; font-size: 13px; font-weight: 700; color: #61533d;
+    margin-top: 12px; background: var(--paper); border: 1px solid var(--line);
+    border-radius: 12px; padding: 9px 11px; font-size: 13px; font-weight: 700; color: #4f5c54;
   }
 
   /* FEATURE STRIP */
   .feature-strip {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
-    background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px;
   }
-  .feature { padding: 22px; border-right: 1px solid var(--line); }
-  .feature:last-child { border-right: none; }
+  .feature {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px;
+  }
   .feature .icon { font-size: 22px; margin-bottom: 8px; display: block; }
   .feature h3 { font-size: 14.5px; margin-bottom: 4px; }
   .feature p { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
 
-  /* SECTIONS */
-  .levels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  /* LEVEL CARDS */
+  .levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
   .level-card {
-    border-radius: 20px; padding: 20px; color: #fff; min-height: 168px;
+    border-radius: 20px; padding: 20px; color: #fff; min-height: 180px;
     display: flex; flex-direction: column; justify-content: space-between;
   }
-  .level-card:nth-child(1) { background: linear-gradient(160deg, #ff9f4d, #e3691a); }
-  .level-card:nth-child(2) { background: linear-gradient(160deg, #6aa2ff, #2563eb); }
-  .level-card:nth-child(3) { background: linear-gradient(160deg, #b18bff, #7c3aed); }
-  .level-card:nth-child(4) { background: linear-gradient(160deg, #3fd0c0, #0e9384); }
-  .level-card .sym { font-size: 26px; font-weight: 900; opacity: .9; }
+  .level-card:nth-child(1) { background: linear-gradient(160deg, #3a5f7d, #223b4f); }
+  .level-card:nth-child(2) { background: linear-gradient(160deg, #6b4a60, #4a3142); }
+  .level-card:nth-child(3) { background: linear-gradient(160deg, #3d6f68, #255049); }
+  .level-card:nth-child(4) { background: linear-gradient(160deg, #4a5f8c, #2f3f66); }
+  .level-card:nth-child(5) { background: linear-gradient(160deg, #3a7a5a, #24503a); }
+  .level-card .sym { font-size: 26px; font-weight: 900; opacity: .92; }
   .level-card h3 { font-size: 20px; margin-top: 8px; }
   .level-card p { font-size: 13px; opacity: .93; margin-top: 4px; }
   .level-card .range {
     margin-top: 14px; font-size: 11.5px; font-weight: 800; letter-spacing: .5px;
-    background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.35);
+    background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3);
     padding: 5px 9px; border-radius: 999px; align-self: flex-start;
   }
+
+  /* ENDLESS PANEL */
+  .endless {
+    background: linear-gradient(150deg, #223b31, #172a23);
+    color: #f2f6ee; border-radius: 28px; padding: 36px;
+    display: grid; grid-template-columns: 1.1fr .9fr; gap: 34px; align-items: center;
+  }
+  .endless .kicker { color: #9bc2a8; }
+  .endless h2 { color: #fff; }
+  .endless p { color: #c9d6cc; font-size: 14.5px; margin-top: 10px; max-width: 520px; }
+  .mission-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .chip {
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18);
+    border-radius: 999px; padding: 7px 12px; font-size: 12.5px; font-weight: 700;
+  }
+  .green-score {
+    background: rgba(38, 128, 90, .18); border: 1px solid rgba(155, 194, 168, .38);
+    border-radius: 22px; padding: 22px; text-align: center;
+  }
+  .green-score .label { font-size: 11px; letter-spacing: 1.6px; font-weight: 800; color: #9bc2a8; }
+  .green-score .value {
+    font-family: "Bricolage", "Public Sans", sans-serif;
+    font-size: 46px; font-weight: 800; color: #7fd0a3; line-height: 1.1; margin: 6px 0;
+  }
+  .green-score p { font-size: 12px; color: #b9cabb; margin: 0; }
+  .endless .btn-primary { margin-top: 22px; background: #2e7d5b; border-color: #24503a; }
 
   /* GALLERY */
   .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
   .shot {
-    background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 9px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 9px;
     transition: transform .18s ease, box-shadow .18s ease;
   }
-  .shot:hover { transform: translateY(-4px); box-shadow: 0 14px 26px rgba(72,55,29,.12); }
-  .shot img { width: 100%; display: block; border-radius: 12px; background: var(--cream); }
-  .shot figcaption { font-size: 12px; font-weight: 800; text-align: center; padding: 9px 3px 3px; color: #564b39; }
+  .shot:hover { transform: translateY(-4px); box-shadow: 0 14px 26px rgba(29,39,43,.10); }
+  .shot img { width: 100%; display: block; border-radius: 12px; background: var(--paper); }
+  .shot figcaption { font-size: 12px; font-weight: 800; text-align: center; padding: 9px 3px 3px; color: #4f5c54; }
 
   /* INSTALL */
   .install { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-  .install .step { background: #fff; }
+  .install .step { background: var(--surface); }
   .note {
-    margin-top: 18px; background: #fff7e8; border: 1px solid #f0d7ad; border-radius: 16px;
-    padding: 15px 18px; color: #7a5a24; font-size: 13.5px;
+    margin-top: 18px; background: #f3eee3; border: 1px solid #d8d2c4; border-radius: 16px;
+    padding: 15px 18px; color: #4f5c54; font-size: 13.5px;
   }
 
   /* FINAL CTA */
   .final {
-    background: #2a2540; color: #fff; border-radius: 28px; padding: 42px 32px;
+    background: #1d272b; color: #fff; border-radius: 28px; padding: 42px 32px;
     display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
   }
   .final h2 { color: #fff; }
-  .final p { color: #c9c4dc; font-size: 14px; margin-top: 6px; }
-  .final .btn-primary { background: var(--orange); border-color: #c95f12; }
+  .final p { color: #c3ccc6; font-size: 14px; margin-top: 6px; }
+  .final .btn-primary { background: #2e7d5b; border-color: #24503a; }
 
   footer { padding: 30px 0 42px; color: var(--muted); font-size: 12.5px; text-align: center; }
-  footer a { color: var(--orange-deep); font-weight: 700; text-decoration: none; }
+  footer a { color: var(--navy); font-weight: 700; text-decoration: none; }
 
   @media (max-width: 900px) {
     .hero { grid-template-columns: 1fr; gap: 34px; padding-top: 42px; }
     .phone { transform: none; width: min(280px, 80%); }
     .steps, .install { grid-template-columns: 1fr; }
-    .feature-strip { grid-template-columns: 1fr 1fr; }
-    .feature:nth-child(2) { border-right: none; }
-    .feature:nth-child(1), .feature:nth-child(2) { border-bottom: 1px solid var(--line); }
-    .levels { grid-template-columns: 1fr 1fr; }
+    .endless { grid-template-columns: 1fr; padding: 28px; }
   }
   @media (max-width: 560px) {
     .nav-links { display: none; }
     .nav { justify-content: space-between; }
-    .feature-strip { grid-template-columns: 1fr; }
-    .feature { border-right: none; border-bottom: 1px solid var(--line); }
-    .levels { grid-template-columns: 1fr; }
     section { padding: 40px 0; }
     .final { padding: 30px 22px; }
   }
@@ -221,6 +264,7 @@
     <nav class="nav-links">
       <a href="#nasil">Nasıl oynanır</a>
       <a href="#bolumler">Bölümler</a>
+      <a href="#sonsuz">Sonsuz Av</a>
       <a href="#ekranlar">Ekranlar</a>
       <a href="#kurulum">Kurulum</a>
     </nav>
@@ -232,12 +276,12 @@
   <div class="wrap">
     <section class="hero">
       <div>
-        <div class="eyebrow">🦊 Android • %100 çevrimdışı • 3. sınıf seviyesi</div>
+        <div class="eyebrow">🦊 Android · %100 çevrimdışı · 4.0.0</div>
         <h1>Sayıları avla,<br><em>hedefi yakala.</em></h1>
         <p class="lede">
           Toplama, çıkarma, çarpma ve bölmeyi oyun oynayarak pekiştiren sade bir bulmaca.
-          Bir sayıya bas, parmağını komşu sayılara sürükle, hedefi tuttur.
-          Doğruysa taşlar yeşil parlar; yanlışsa kırmızı olur ve puanın azalır.
+          Bir sayıya bas, komşu sayılara sürükle ya da tek tek dokun; hedefi tuttur.
+          Doğruysa taşlar yeşil parlar, yanlışsa kiremit kırmızısı olur.
         </p>
         <div class="cta-row">
           <a class="btn btn-primary" href="https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk" download>
@@ -247,13 +291,13 @@
         </div>
 
         <div class="address-card">
-          <b>Doğrudan kurulum dosyası (APK v3.0.0)</b>
+          <b>Doğrudan kurulum dosyası (APK v4.0.0)</b>
           <code>https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk</code>
         </div>
       </div>
 
       <div class="phone">
-        <img src="docs/screenshots/v3/03-oyun.png" alt="SAYI AVCISI 7 toplama bölümü: 6x6 sayı tahtası, üstte bölüm adı ve yıldız puanı" />
+        <img src="docs/screenshots/v4/07-oyun-1-6x10.png" alt="SAYI AVCISI 1 toplama bölümü: 6x10 sayı tahtası, üstte bölüm adı ve yıldız puanı" />
       </div>
     </section>
   </div>
@@ -263,27 +307,27 @@
       <div class="section-head">
         <div class="kicker">Çocuk için tek kural</div>
         <h2>Bas, sürükle, bırak. Düğme yok.</h2>
-        <p>Oyunun hedefi üstte tek satır yazar: “7 toplama”. Çocuk ne yapacağını tahmin etmez.</p>
+        <p>Hedef üstte tek satır yazar: “7 toplama”. Çocuk ne yapacağını tahmin etmez.</p>
       </div>
 
       <div class="steps">
         <div class="step">
           <div class="num">1</div>
           <h3>Bir sayıya basılı tut</h3>
-          <p>Dokunduğun taş sarıya döner; parmağını çekince turuncuya ısınır.</p>
+          <p>Dokunduğun taş mürekkep lacivertine döner; seçim koyu ve okunaklı kalır.</p>
           <div class="example">7 · 0 · 2 · 3 …</div>
         </div>
         <div class="step">
           <div class="num">2</div>
           <h3>Komşu sayılara sürükle</h3>
-          <p>Yatay, dikey ve çapraz komşular olur. Aralarında taş kalmayan uzak sayılar da komşudur; düz giderken çapraza dönebilirsin.</p>
+          <p>Yatay, dikey ve çapraz komşular olur. Aralarında taş kalmayan uzak sayılar da komşudur.</p>
           <div class="example">2 + 2 + 3 = 7</div>
         </div>
         <div class="step">
           <div class="num">3</div>
           <h3>Parmağını bırak</h3>
-          <p>Hamle kendiliğinden kontrol edilir. Doğruysa taşlar patlar; yanlışsa sarsılır ve puan azalır.</p>
-          <div class="example">✓ yeşil &nbsp;·&nbsp; ✗ kırmızı</div>
+          <p>Hamle kendiliğinden kontrol edilir. Tek dokunuşla oynayan çocuk için sonuç 140 ms içinde gelir.</p>
+          <div class="example">✓ yeşil &nbsp;·&nbsp; ✗ kiremit kırmızısı</div>
         </div>
       </div>
     </div>
@@ -295,22 +339,22 @@
         <div class="feature">
           <span class="icon">🧩</span>
           <h3>2, 3 ve 4 taşlı kombinasyon</h3>
-          <p>Toplamada üçlü ve dörtlü gruplar da geçerli. 0+4, 1+3, 2+2 gibi bütün kombinasyonlar aynı oranda karşına çıkar.</p>
+          <p>Toplamada üçlü ve dörtlü gruplar da geçerli. 0+4, 1+3, 2+2 gibi bütün kombinasyonlar eşit oranda çıkar.</p>
         </div>
         <div class="feature">
           <span class="icon">🎉</span>
           <h3>Büyük kombo kutlaması</h3>
-          <p>3 veya 4 taşı birden avlarsan ekranda kocaman “SÜPER KOMBO” yazar, yıldızlar saçılır ve puanın üstteki yıldıza uçar.</p>
+          <p>3 veya 4 taşı birden avlarsan “SÜPER KOMBO” belirir; yıldızlar saçılır, puan yukarı süzülür.</p>
         </div>
         <div class="feature">
           <span class="icon">⭐</span>
           <h3>Yıldız desteği</h3>
-          <p>Geçerli hamle kalmazsa oyun ücretsiz olarak kalan taşları yeniden dizer. Ceza yok, tıkanma yok.</p>
+          <p>Geçerli hamle kalmazsa oyun kalan taşları ücretsiz yeniden dizer. Ceza yok, tıkanma yok.</p>
         </div>
         <div class="feature">
           <span class="icon">📱</span>
-          <h3>İnternetsiz oynanır</h3>
-          <p>İlerleme cihazda saklanır. Reklam, hesap ve internet gerekmez; kur ve hemen başla.</p>
+          <h3>Tablet tahtaları</h3>
+          <p>Geniş tablette tahta otomatik 15 sütuna kadar genişler. Ebeveyn panelinden 6, 9, 12 veya 15 seçilebilir.</p>
         </div>
       </div>
     </section>
@@ -319,9 +363,9 @@
   <section id="bolumler" style="padding-top:24px">
     <div class="wrap">
       <div class="section-head">
-        <div class="kicker">66 bölüm · hepsi açık</div>
-        <h2>Dört bölüm, kolaydan zora</h2>
-        <p>Toplama 1’den 30’a ardışık ilerler. Çarpım tablosu dahil bütün bölümler baştan açıktır; istediğin yerden dene.</p>
+        <div class="kicker">66 bölüm + Sonsuz Av · hepsi açık</div>
+        <h2>Dört işlem, kolaydan zora</h2>
+        <p>Toplama 1’den 30’a ardışık ilerler. Kolay hedefler 6×10, genel hedefler 6×6, bölüm finali 6×50 tahtadır.</p>
       </div>
 
       <div class="levels">
@@ -329,7 +373,7 @@
           <div>
             <div class="sym">+</div>
             <h3>Toplama</h3>
-            <p>Her bölüm tek hedef. İlk üç hedefte tahta küçülür, sonra 6×6.</p>
+            <p>Her bölüm tek hedef. 2, 3 ve 4 taşlı kombinasyonlar geçerli.</p>
           </div>
           <div class="range">1 → 30</div>
         </div>
@@ -345,7 +389,7 @@
           <div>
             <div class="sym">×</div>
             <h3>Çarpma Tablosu</h3>
-            <p>2’den 36’ya çarpım hedefleri. 6×6 tahtada çarpanları avla.</p>
+            <p>2’den 36’ya çarpım hedefleri. Çarpanları avla.</p>
           </div>
           <div class="range">2 → 36</div>
         </div>
@@ -357,6 +401,42 @@
           </div>
           <div class="range">1 → 8</div>
         </div>
+        <div class="level-card">
+          <div>
+            <div class="sym">∞</div>
+            <h3>Sonsuz Av</h3>
+            <p>6×100 tahtada anlık görevler. Temizlenen kare anında yenilenir.</p>
+          </div>
+          <div class="range">Yeşil puan</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="sonsuz" style="padding-top:8px">
+    <div class="wrap">
+      <div class="endless">
+        <div>
+          <div class="kicker">Yeni mod · 6×100</div>
+          <h2>Sonsuz Av: her doğru hamlede yeni görev</h2>
+          <p>
+            Sabit bir başlık yok. Üstte o anki görev yazar; doğru tamamlayınca yenisi gelir.
+            Temizlenen kareler anında yeni sayılarla dolar, tahta hiç boş kalmaz.
+            Her görev için tahtaya oynanabilir bir örnek kombinasyon yerleştirilir.
+          </p>
+          <div class="mission-chips">
+            <span class="chip">4 sayı topla</span>
+            <span class="chip">3 sayı çıkar</span>
+            <span class="chip">3 sayı çarp</span>
+            <span class="chip">2 sayı böl</span>
+          </div>
+          <a class="btn btn-primary" href="https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk" download>📲 Sonsuz Av'ı dene</a>
+        </div>
+        <div class="green-score">
+          <div class="label">SONSUZ AV PUANI</div>
+          <div class="value">● 248</div>
+          <p>Yeşil puan normal sarı puana karışmaz. En iyi skor, çözülen görev, oynanma sayısı ve en iyi seri ayrı kaydedilir.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -364,35 +444,35 @@
   <section id="ekranlar">
     <div class="wrap">
       <div class="section-head">
-        <div class="kicker">Yeni tasarım</div>
+        <div class="kicker">Yeni tasarım · 4.0.0</div>
         <h2>Oyun içinden kareler</h2>
-        <p>Kareler, yeni 3.0.0 sürümünden Android emülatöründe gerçekten oynanarak alındı.</p>
+        <p>Kareler, 4.0.0 sürümünden Android emülatöründe gerçekten oynanarak alındı.</p>
       </div>
 
       <div class="gallery">
         <figure class="shot">
-          <img src="docs/screenshots/v3/01-giris.png" alt="SAYI AVCISI giriş ekranı" loading="lazy" />
+          <img src="docs/screenshots/v4/01-giris.png" alt="SAYI AVCISI giriş ekranı" loading="lazy" />
           <figcaption>Giriş</figcaption>
         </figure>
         <figure class="shot">
-          <img src="docs/screenshots/v3/02-bolumler.png" alt="Bölüm listesi: toplama hedefleri" loading="lazy" />
+          <img src="docs/screenshots/v4/02-bolumler.png" alt="Bölüm listesi: toplama hedefleri" loading="lazy" />
           <figcaption>Bölümler</figcaption>
         </figure>
         <figure class="shot">
-          <img src="docs/screenshots/v3/03-oyun.png" alt="7 toplama oyun ekranı" loading="lazy" />
-          <figcaption>7 toplama</figcaption>
+          <img src="docs/screenshots/v4/07-oyun-1-6x10.png" alt="1 toplama bölümü: 6x10 kolay tahta" loading="lazy" />
+          <figcaption>6×10 kolay tahta</figcaption>
         </figure>
         <figure class="shot">
-          <img src="docs/screenshots/v3/04-kombo.png" alt="3 taşlı komboda süper kombo kutlaması" loading="lazy" />
+          <img src="docs/screenshots/v4/08-oyun-30-6x50.png" alt="30 toplama bölümü: 6x50 uzun tahta" loading="lazy" />
+          <figcaption>6×50 uzun tahta</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="docs/screenshots/v4/14-uclu-kombo.png" alt="3 taşlı komboda süper kombo kutlaması" loading="lazy" />
           <figcaption>3’lü kombo</figcaption>
         </figure>
         <figure class="shot">
-          <img src="docs/screenshots/v3/05-yanlis.png" alt="Yanlış hamlede kırmızı taşlar ve puan azalması" loading="lazy" />
+          <img src="docs/screenshots/v4/12-yanlis.png" alt="Yanlış hamlede kırmızı taşlar ve puan azalması" loading="lazy" />
           <figcaption>Yanlış hamle</figcaption>
-        </figure>
-        <figure class="shot">
-          <img src="docs/screenshots/v3/06-bolumler-alt.png" alt="Çıkarma, çarpma tablosu ve bölme bölümleri" loading="lazy" />
-          <figcaption>Tüm bölümler</figcaption>
         </figure>
       </div>
     </div>
@@ -402,7 +482,7 @@
     <div class="wrap">
       <div class="section-head">
         <div class="kicker">3 adımda kurulum</div>
-        <h2>Telefona APK olarak yükle</h2>
+        <h2>Telefona veya tablete APK olarak yükle</h2>
         <p>Android 7.0 ve üzeri. Yaklaşık 12 MB. Mağaza gerekmez.</p>
       </div>
 
@@ -440,7 +520,7 @@
       <div class="final">
         <div>
           <h2>Hazırsan av başlasın.</h2>
-          <p>Toplama, çıkarma, çarpma ve bölme; tek oyunda, reklamsız ve çevrimdışı.</p>
+          <p>Toplama, çıkarma, çarpma, bölme ve Sonsuz Av; tek oyunda, reklamsız ve çevrimdışı.</p>
         </div>
         <a class="btn btn-primary" href="https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk" download>
           📲 SAYI-AVCISI.apk indir
@@ -452,7 +532,7 @@
 
 <footer>
   <div class="wrap">
-    SAYI AVCISI 3.0.0 · Kotlin &amp; Jetpack Compose · Kaynak kod:
+    SAYI AVCISI 4.0.0 · Kotlin &amp; Jetpack Compose · Kaynak kod:
     <a href="https://github.com/ardaozkul/SAYI-AVCISI">github.com/ardaozkul/SAYI-AVCISI</a>
     <br />
     APK: <a href="https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk">SAYI-AVCISI.apk</a>

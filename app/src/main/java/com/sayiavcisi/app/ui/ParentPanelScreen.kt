@@ -66,6 +66,7 @@ fun ParentPanelScreen(
     onToggleSound: (Boolean) -> Unit,
     onToggleTimedMode: (Boolean) -> Unit,
     onTimeExtension: (Int) -> Unit,
+    onBoardColumns: (Int) -> Unit,
     onResetDailyScore: () -> Unit,
     onResetAllProgress: () -> Unit,
     onBack: () -> Unit
@@ -95,6 +96,50 @@ fun ParentPanelScreen(
             )
 
             SummaryRow(snapshot = snapshot)
+
+            SectionCard(title = "Sonsuz Av · yeşil puan kaydı", p = p, delayMillis = 60) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        SummaryTile(
+                            value = "${snapshot.endlessBestScore}",
+                            caption = "en iyi yeşil puan",
+                            note = "ayrı kayıt",
+                            modifier = Modifier.weight(1f),
+                            valueColor = GameVisuals.greenPoint
+                        )
+                        SummaryTile(
+                            value = "${snapshot.endlessTotalScore}",
+                            caption = "toplam yeşil puan",
+                            note = "${snapshot.endlessPlays} oyun",
+                            modifier = Modifier.weight(1f),
+                            valueColor = GameVisuals.greenPoint
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        SummaryTile(
+                            value = "${snapshot.endlessMissions}",
+                            caption = "tamamlanan görev",
+                            note = "toplam",
+                            modifier = Modifier.weight(1f),
+                            valueColor = GameVisuals.greenPoint
+                        )
+                        SummaryTile(
+                            value = "${snapshot.endlessBestStreak}",
+                            caption = "en iyi seri",
+                            note = "üst üste görev",
+                            modifier = Modifier.weight(1f),
+                            valueColor = GameVisuals.greenPoint
+                        )
+                    }
+                    Text(
+                        text = "Yeşil puan yalnızca Sonsuz Av'dan gelir; klasik bölümlerin sarı puanıyla karışmaz.",
+                        color = p.muted,
+                        fontSize = 11.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
 
             SectionCard(title = "Gün gün ilerleme", p = p, delayMillis = 80) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -208,6 +253,28 @@ fun ParentPanelScreen(
                             p = p
                         )
                     }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Tablet / geniş ekran tahtası",
+                            color = p.onSurface,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "10–11 inç tablette tahtayı yatay büyütür. Otomatik: telefonda 6, geniş ekranda 9–15 sütun. Sonsuz Av bu genişlikte 100 satır olur.",
+                            color = p.muted,
+                            fontSize = 12.sp,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        BoardColumnsChips(
+                            current = snapshot.boardColumns,
+                            onSelect = onBoardColumns,
+                            p = p
+                        )
+                    }
                 }
             }
 
@@ -304,7 +371,7 @@ private fun SummaryRow(snapshot: ParentStatsSnapshot) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             SummaryTile(
                 value = "${snapshot.dailyScore}/${ParentStatsSnapshot.DAILY_CAP}",
-                caption = "bugünkü puan",
+                caption = "bugünkü sarı puan",
                 note = "günlük tavan ${ParentStatsSnapshot.DAILY_CAP}",
                 modifier = Modifier
                     .weight(1f)
@@ -345,7 +412,8 @@ private fun SummaryTile(
     value: String,
     caption: String,
     note: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    valueColor: Color? = null
 ) {
     val p = GameVisuals.palette("lab")
     Surface(
@@ -363,7 +431,7 @@ private fun SummaryTile(
         ) {
             Text(
                 text = value,
-                color = p.accentDeep,
+                color = valueColor ?: p.accentDeep,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Black,
                 maxLines = 1,
@@ -671,6 +739,42 @@ private fun TimeExtensionChips(currentSeconds: Int, onSelect: (Int) -> Unit, p: 
                         shape = RoundedCornerShape(50)
                     )
                     .clickable { onSelect(seconds) }
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = label,
+                    color = if (selected) Color.White else p.onSurface,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoardColumnsChips(current: Int, onSelect: (Int) -> Unit, p: WorldPalette) {
+    val options = listOf(0, 6, 9, 12, 15)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        options.forEach { columns ->
+            val selected = columns == current
+            val label = if (columns == 0) "Oto" else "$columns"
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(if (selected) p.accentDeep else p.surface, RoundedCornerShape(50))
+                    .border(
+                        width = 1.dp,
+                        color = if (selected) p.accentDeep else p.muted.copy(alpha = 0.4f),
+                        shape = RoundedCornerShape(50)
+                    )
+                    .clickable { onSelect(columns) }
                     .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
