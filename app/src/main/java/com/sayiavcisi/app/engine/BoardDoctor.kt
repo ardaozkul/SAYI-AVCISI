@@ -162,9 +162,11 @@ object BoardDoctor {
     }
 
     private fun groupSize(remaining: Int, allowed: List<Int>): Int = when {
+        remaining >= 4 && allowed.contains(4) && remaining % 4 == 0 -> 4
         remaining >= 3 && allowed.contains(3) && (remaining % 2 == 1 || !allowed.contains(2)) -> 3
         remaining >= 2 && allowed.contains(2) -> 2
         remaining >= 3 && allowed.contains(3) -> 3
+        remaining >= 4 && allowed.contains(4) -> 4
         else -> remaining
     }
 

@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             SayiAvcisiTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF101528)) {
+                Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFFFFBF3)) {
                     SayiAvcisiApp(storage)
                 }
             }
@@ -37,9 +37,9 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun SayiAvcisiTheme(content: @Composable () -> Unit) {
     val scheme = if (isSystemInDarkTheme()) {
-        darkColorScheme(primary = Color(0xFF5BD6A0), background = Color(0xFF101528), surface = Color(0xFF1B2340))
+        darkColorScheme(primary = Color(0xFFFF8A3D), background = Color(0xFFFFFBF3), surface = Color.White)
     } else {
-        lightColorScheme(primary = Color(0xFF1E9E6A), background = Color(0xFFF6FBFF), surface = Color.White)
+        lightColorScheme(primary = Color(0xFFFF8A3D), background = Color(0xFFFFFBF3), surface = Color.White)
     }
     MaterialTheme(colorScheme = scheme, content = content)
 }

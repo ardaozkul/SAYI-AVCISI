@@ -8,16 +8,17 @@ import kotlin.math.max
 /**
  * Puanlama.
  *
- * Kurallar:
  * - Her doğru eşleşme puan getirir; üst üste doğru hamle serisi bonusu büyütür.
- * - Bir günde EN FAZLA 100 puan kazanılabilir (günlük tavan). Tavanda olan kısım silinir,
- *   çocuğun bir güne bütün oyunu sıkıştırması gerekmez.
- * - Jokerler puandan GÖTÜRÜR (tavanı etkilemez).
- * - ALTIN KURTARMA bedava ve puansızdır: çocuk cezalandırılmaz.
+ * - 3'lü ve 4'lü kombinasyonlar KOMBO bonusu alır: 3 taş +5, 4 taş +12. Ekranda kocaman yazar.
+ * - Yanlış eşleşme bölüm puanından 2 puan götürür (0'ın altına inmez).
+ * - Bir günde gösterge için 100 puanlık tavan korunur; bölüm puanı tavandan bağımsızdır.
  */
 object ScoreEngine {
 
     const val DAILY_CAP = 100
+
+    /** Yanlış eşleşmenin bölüm puanından götürdüğü puan. */
+    const val WRONG_PENALTY = 2
 
     /** Üst üste doğrular için eklenen puan; en fazla +8. */
     fun streakBonus(streak: Int): Int = max(0, streak - 1).coerceAtMost(8)
@@ -30,14 +31,22 @@ object ScoreEngine {
             RuleKind.PRODUCT -> 6
             RuleKind.QUOTIENT -> 7
         }
-        val tripleBonus = if (groupSize == 3) 2 else 0
-        val sizeBonus = when (spec.gridSize) {
-            in 8..10 -> 2
-            in 6..7 -> 1
-            else -> 0
-        }
-        val raw = base + tripleBonus + sizeBonus + streakBonus(streak)
+        val raw = base + comboBonus(groupSize) + sizeBonus(spec.gridSize) + streakBonus(streak)
         return if (doubleNext) raw * 2 else raw
+    }
+
+    /** 3'lü ve 4'lü kombinasyonun ekstra puanı. */
+    fun comboBonus(groupSize: Int): Int = when (groupSize) {
+        3 -> 5
+        4 -> 12
+        else -> 0
+    }
+
+    /** Büyük tahtalarda avlamak biraz daha değerli. */
+    fun sizeBonus(gridSize: Int): Int = when (gridSize) {
+        in 8..10 -> 2
+        in 6..7 -> 1
+        else -> 0
     }
 
     /**
@@ -72,7 +81,7 @@ object ScoreEngine {
         else -> 0
     }
 
-    /** Günlük tavan yüzdesi: harita ekranındaki ilerleme çubuğu. */
+    /** Günlük tavan yüzdesi: ana ekrandaki ilerleme çubuğu. */
     fun dailyProgressPercent(dailyEarned: Int): Int =
         (dailyEarned * 100 / DAILY_CAP).coerceIn(0, 100)
 }

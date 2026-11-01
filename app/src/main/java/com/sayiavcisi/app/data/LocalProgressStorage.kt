@@ -119,8 +119,8 @@ class LocalProgressStorage(context: Context) {
     fun loadSnapshot(): ParentStatsSnapshot {
         ensureDailyRollover()
         val completedLevels = prefs.getStringSet("completed_levels", emptySet()) ?: emptySet()
-        val completedDays = (1..5).filter { day ->
-            (1..6).all { stage -> completedLevels.contains("D${day}_S${stage}") }
+        val completedDays = (1..com.sayiavcisi.app.engine.CurriculumRepository.dayCount).filter { day ->
+            com.sayiavcisi.app.engine.CurriculumRepository.isDayCompleted(day, completedLevels)
         }.toSet()
 
         val multStruggles = mutableMapOf<Int, Int>()
@@ -176,9 +176,9 @@ class LocalProgressStorage(context: Context) {
             averageResponseTimeSeconds = avgSec,
             dailyPlayTimeSeconds = prefs.getLong("daily_play_seconds", 0L),
             soundEnabled = prefs.getBoolean("sound_enabled", true),
-            relaxedUntimedMode = prefs.getBoolean("relaxed_untimed_mode", false),
+            relaxedUntimedMode = prefs.getBoolean("relaxed_untimed_mode", true),
             customTimeAdditionSeconds = prefs.getInt("custom_time_addition_sec", 0),
-            lastActiveLevelId = prefs.getString("last_active_level_id", "D1_S1")
+            lastActiveLevelId = prefs.getString("last_active_level_id", "A1")
         )
     }
 

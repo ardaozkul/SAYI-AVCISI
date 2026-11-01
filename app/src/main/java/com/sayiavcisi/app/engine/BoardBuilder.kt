@@ -11,9 +11,11 @@ import kotlin.random.Random
  * Tahta kurucu.
  *
  * Garanti: üretilen plan, ızgaradaki HER bloğu gruplara böler; hiçbir blok eşleşmesiz kalmaz.
- * Her grup aynı hatta (yatay/dikey/çapraz) bitişik hücrelerden oluşur, bu yüzden grup
- * aralarında hiçbir zaman blok kalmaz ve plan her sırayla uygulanabilir.
- * Grup değerleri RuleEngine.operandsFor ile üretilir, yani her grup bölümün TEK hedefini sağlar.
+ * Her grup aynı hatta (yatay/dikey/çapraz) bitişik hücrelerden oluşur.
+ *
+ * Önemli yenilik: değerler rastgele değil, hedefin TÜM kombinasyonlarını içeren karıştırılmış
+ * bir desteden sırayla dağıtılır. Böylece "4 toplamı" bölümünde 0+4, 1+3 ve 2+2 eşit sıklıkta
+ * gelir; sadece 1+3 çıkması gibi bir dengesizlik olmaz.
  */
 object BoardBuilder {
 
@@ -23,10 +25,19 @@ object BoardBuilder {
         val sizes = allowedSizesFor(spec)
         val plan = plan(spec.gridSize, sizes, random)
         val valuesByCoord = mutableMapOf<Pair<Int, Int>, Int>()
+        val cursor = mutableMapOf<Int, Int>()
 
         for (group in plan) {
-            val operands = operandsOrFallback(spec.ruleKind, spec.target, group.size, random)
-            group.forEachIndexed { i, coord -> valuesByCoord[coord] = operands[i] }
+            val size = group.size
+            val deck = combosFor(spec, size)
+            val index = cursor[size] ?: 0
+            cursor[size] = index + 1
+            val combo = when {
+                deck.isEmpty() -> fallbackOperands(spec, size, random)
+                else -> deck[index % deck.size]
+            }
+            val ordered = combo.shuffled(random)
+            group.forEachIndexed { i, coord -> valuesByCoord[coord] = ordered[i] }
         }
 
         val cells = ArrayList<BlockCell>(spec.gridSize * spec.gridSize)
@@ -38,8 +49,7 @@ object BoardBuilder {
                         id = cells.size,
                         row = r,
                         col = c,
-                        // Plan dışı kalan kare (yalnızca hatalı bölüm tanımında olur) boş bırakılır:
-                        // asla eşleşmeyen bir blok üretmez.
+                        // Plan dışı kalan kare (yalnızca hatalı bölüm tanımında olur) boş bırakılır.
                         value = value ?: 0,
                         isCleared = value == null
                     )
@@ -55,31 +65,30 @@ object BoardBuilder {
         )
     }
 
-    /** Bölüm hedefinin blok grubu boyutları. Çarpma/bölme/çıkarma için yalnızca 2 kullanılır. */
+    /** Bölüm hedefinin blok grubu boyutları. Toplamada 2, 3 ve 4'lü kombinasyonlar serbest. */
     fun allowedSizesFor(spec: LevelSpec): List<Int> {
         if (spec.ruleKind != RuleKind.SUM) return listOf(2)
-        val requested = spec.groupSizes.filter { it == 2 || it == 3 }
+        val requested = spec.groupSizes.filter { it in 2..4 }.distinct()
         val base = if (requested.isEmpty()) listOf(2) else requested
         val total = spec.gridSize * spec.gridSize
-        // Toplam blok sayısı tek ise yalnızca ikili gruplarla tam temizleme imkânsız: üçlü gruba izin ver.
+        // Tek hücreli ızgara yalnızca ikili/üçlü ile kaplanamaz; üçlü ekle.
         return if (total % 2 == 1 && !base.contains(3)) base + 3 else base
     }
 
     /**
      * Izgarayı bitişik, aynı hatta olan gruplarla tamamen kaplar.
-     * Rastgele diziliş denenir (oyun çeşitliliği için yatay/dikey/çapraz karışımı),
-     * tutmazsa her zaman çalışan satır dizilişine düşülür.
+     * Rastgele diziliş denenir (yatay/dikey/çapraz karışımı), tutmazsa her zaman
+     * çalışan satır dizilişine düşülür.
      */
     fun plan(gridSize: Int, sizes: List<Int>, random: Random): List<List<Pair<Int, Int>>> {
-        val allowed = sizes.filter { it == 2 || it == 3 }.ifEmpty { listOf(2) }
-        // Tek hücre sayılı ızgara ikili gruplarla kaplanamaz; üçlü grup ekle.
+        val allowed = sizes.filter { it in 2..4 }.ifEmpty { listOf(2) }
         val usable = if (gridSize * gridSize % 2 == 1 && !allowed.contains(3)) allowed + 3 else allowed
 
-        repeat(40) {
+        repeat(60) {
             val attempt = tryRandomTiling(gridSize, usable, random)
             if (attempt != null) return attempt
         }
-        return rowTiling(gridSize, usable)
+        return rowTiling(gridSize, usable, random)
     }
 
     private fun tryRandomTiling(
@@ -136,78 +145,70 @@ object BoardBuilder {
     }
 
     /**
-     * Her zaman çalışan garantili diziliş: satırlar boyunca bitişik ikili/üçlü gruplar.
-     * Satır uzunluğu tekse son blok, bitişik olduğu önceki ikili grubun üçlüye büyütülmesinde kullanılır.
+     * Her zaman çalışan garantili diziliş: her satır, izin verilen boyutların geçerli bir
+     * bölünmesiyle gruplara ayrılır. 4x4, 6x6 ve 8x8 çift boyutlu olduğu için tam kaplama olur.
      */
-    fun rowTiling(gridSize: Int, allowed: List<Int>): List<List<Pair<Int, Int>>> {
+    fun rowTiling(
+        gridSize: Int,
+        allowed: List<Int>,
+        random: Random = Random(1)
+    ): List<List<Pair<Int, Int>>> {
+        val allowedSizes = allowed.filter { it in 2..4 }.ifEmpty { listOf(2) }
         val groups = mutableListOf<List<Pair<Int, Int>>>()
         for (r in 0 until gridSize) {
-            val rowGroups = mutableListOf<List<Pair<Int, Int>>>()
+            val parts = rowPartitions(gridSize, allowedSizes)
+            val choice = if (parts.isEmpty()) listOf(gridSize) else parts[random.nextInt(parts.size)]
             var c = 0
-            while (gridSize - c >= 2) {
-                val remaining = gridSize - c
-                val size = when {
-                    remaining % 2 == 1 && allowed.contains(3) -> 3
-                    allowed.contains(2) -> 2
-                    allowed.contains(3) -> 3
-                    else -> remaining
-                }.coerceAtMost(remaining)
-                rowGroups.add((0 until size).map { r to (c + it) })
+            for (size in choice) {
+                groups.add((0 until size).map { r to (c + it) })
                 c += size
             }
-            if (c < gridSize) {
-                val last = rowGroups.lastOrNull()
-                if (last != null && last.size == 2 && last.last().second == c - 1) {
-                    rowGroups[rowGroups.lastIndex] = last + (r to c)
-                } else {
-                    rowGroups.add(listOf(r to c))
-                }
-            }
-            groups.addAll(rowGroups)
         }
         return groups.filter { it.size >= 2 }
     }
 
-    /** operandsFor null dönerse (müfredat dışı target) hedefi bozmayan güvenli değer kümesi. */
-    private fun operandsOrFallback(
-        kind: RuleKind,
-        target: Int,
-        groupSize: Int,
-        random: Random
-    ): List<Int> {
-        val direct = if (groupSize == 3 && kind != RuleKind.SUM) null
-        else RuleEngine.operandsFor(kind, target, groupSize, random)
-        if (direct != null && direct.size == groupSize && direct.all { it in 0..99 }) return direct
-
-        return when (kind) {
-            RuleKind.SUM -> {
-                if (groupSize == 2) {
-                    val a = random.nextInt(0, target.coerceAtMost(50) + 1)
-                    listOf(a, target - a)
-                } else {
-                    val a = random.nextInt(0, target.coerceAtMost(33) + 1)
-                    val b = random.nextInt(0, (target - a).coerceAtMost(33) + 1)
-                    listOf(a, b, target - a - b)
+    /** Satır uzunluğunun izin verilen boyutlara tüm bölünmeleri (küçük liste). */
+    private fun rowPartitions(length: Int, allowed: List<Int>): List<List<Int>> {
+        val out = mutableListOf<List<Int>>()
+        val current = mutableListOf<Int>()
+        fun walk(left: Int) {
+            if (left == 0) {
+                out.add(current.toList())
+                return
+            }
+            for (size in allowed) {
+                if (size <= left) {
+                    current.add(size)
+                    walk(left - size)
+                    current.removeAt(current.size - 1)
                 }
             }
-
-            RuleKind.DIFF -> {
-                val small = random.nextInt(0, 8)
-                listOf(small + target, small)
-            }
-
-            RuleKind.PRODUCT -> productOperands(target, random) ?: listOf(target.coerceIn(0, 99), 1)
-
-            RuleKind.QUOTIENT -> {
-                val divisor = if (target > 9) 2 else random.nextInt(2, 10)
-                val dividend = target * divisor
-                if (dividend <= 99) listOf(dividend, divisor) else listOf(divisor, 1)
-            }
         }
+        walk(length)
+        return out.filter { it.isNotEmpty() }.ifEmpty { listOf(listOf(length)) }
     }
 
-    private fun productOperands(target: Int, random: Random): List<Int>? =
-        RuleEngine.operandsFor(RuleKind.PRODUCT, target, 2, random)
+    /** Hedefin tüm kombinasyonlarından karıştırılmış tek grup boyu destesi. */
+    private fun combosFor(spec: LevelSpec, groupSize: Int): List<List<Int>> =
+        RuleEngine.combosFor(spec.ruleKind, spec.target, groupSize)
+
+    /** Deste boşsa (müfredat dışı hedef) hedefi bozmayan güvenli değerler. */
+    private fun fallbackOperands(spec: LevelSpec, groupSize: Int, random: Random): List<Int> {
+        val direct = RuleEngine.operandsFor(spec.ruleKind, spec.target, groupSize, random)
+        if (direct != null && direct.size == groupSize && direct.all { it in 0..99 }) return direct
+        return when (spec.ruleKind) {
+            RuleKind.SUM -> {
+                val a = random.nextInt(0, spec.target.coerceAtMost(50) + 1)
+                val rest = spec.target - a
+                if (groupSize == 2) listOf(a, rest)
+                else listOf(a, rest.coerceAtMost(33), (rest - rest.coerceAtMost(33)).coerceAtLeast(0))
+            }
+
+            RuleKind.DIFF -> listOf(spec.target.coerceIn(0, 99), 0)
+            RuleKind.PRODUCT -> listOf(spec.target.coerceIn(0, 99), 1)
+            RuleKind.QUOTIENT -> listOf(spec.target.coerceIn(0, 99), 1)
+        }
+    }
 
     /** Mod değişirse (LINE_OF_SIGHT <-> FREE) tahtayı olduğu gibi korur, kuralı yorumlama değişir. */
     fun withMode(board: Board, mode: MatchRuleMode): Board = board.copy(ruleMode = mode)

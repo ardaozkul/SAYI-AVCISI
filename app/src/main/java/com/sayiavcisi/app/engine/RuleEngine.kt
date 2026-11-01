@@ -5,14 +5,20 @@ import com.sayiavcisi.app.model.MatchRuleMode
 import com.sayiavcisi.app.model.RuleKind
 import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.sign
 import kotlin.random.Random
 
 /**
  * Tek doğruluk kaynağı: bir seçimin geometrik ve matematiksel olarak geçerli olup olmadığı.
  *
- * Sıra bağımsızdır: çocuk blokları hangi sırada dokunursa dokunsun aynı sonuç çıkar.
- * (1.0 sürümündeki "bazen oluyor bazen olmuyor" şikâyetinin kökü sıra bağımlılığıydı.)
+ * Yeni kural çocuğun parmağını sürüklemesine göre yazıldı:
+ * - Aynı hatta (yatay, dikey, çapraz) ve aralarında taş kalmamış bloklar komşudur. "2 + 5" gibi
+ *   aralarında boşluk olan taşlar da bu yüzden eşleşir.
+ * - Parmağı komşu kareye çekerek 3 veya 4 blok seçilebilir; sıra ve yön serbesttir.
+ * - Matematik sıra gözetmez: 1+4 ile 4+1, 9-4 ile 4-9 aynı kabul edilir.
+ *
+ * Sıra bağımsızlığı 1.x'teki "bazen oluyor bazen olmuyor" şikâyetinin kökünü kurutur.
  */
 object RuleEngine {
 
@@ -40,7 +46,7 @@ object RuleEngine {
         return true
     }
 
-    /** Hat üzerindeki sıraya dizilmiş iki komşu seçim arasında aktif blok var mı? */
+    /** Hat üzerindeki iki seçim arasında aktif blok var mı? */
     private fun hasBlockerBetween(
         a: Pair<Int, Int>,
         b: Pair<Int, Int>,
@@ -57,8 +63,19 @@ object RuleEngine {
         return false
     }
 
+    /** İki blok yan yana mı (8 yön, köşe dahil)? */
+    private fun neighbours(a: Pair<Int, Int>, b: Pair<Int, Int>): Boolean {
+        val dr = abs(a.first - b.first)
+        val dc = abs(a.second - b.second)
+        return dr <= 1 && dc <= 1 && (dr + dc) > 0
+    }
+
     /**
      * Geometri kontrolü. Dönüş: null => geçerli, değilse çocuğun anlayacağı Türkçe açıklama.
+     *
+     * Kabul edilen iki yol:
+     * 1) Hepsi aynı hatta ve aralarında aktif blok yok (uzaktaki 2 + 5 dahil).
+     * 2) Seçim sırasıyla her adım bir komşu kareye geçiyor (düz giderken çapraza dönebilir).
      */
     fun geometryProblem(
         selected: List<Pair<Int, Int>>,
@@ -70,19 +87,31 @@ object RuleEngine {
         if (selected.any { !active.contains(it) }) return "Seçtiğin bloklardan biri zaten temizlenmiş."
         if (mode == MatchRuleMode.FREE) return null
 
-        if (!areCollinear(selected)) {
-            return "Seçtiklerin aynı hatta olmalı: yatay, dikey veya çapraz."
-        }
-        val ordered = orderAlongLine(selected) ?: return "Seçtiklerin aynı hatta olmalı."
-        for (i in 1 until ordered.size) {
-            if (hasBlockerBetween(ordered[i - 1], ordered[i], active)) {
-                return "Arada hâlâ bir blok var! Önce onu temizle ya da bitişik olanı seç."
-            }
-        }
-        return null
+        if (isCleanLine(selected, active)) return null
+        if (isNeighbourChain(selected)) return null
+
+        return "Bloklar yan yana olmalı ya da aynı hatta ilerlemeli. Çapraz ve dönüş serbest."
     }
 
-    /** Seçikleri hat üzerinde uçtan uca sıralar; doğru çizgi değilse null döner. */
+    /** Aynı hatta, aralarında aktif blok yok. */
+    private fun isCleanLine(selected: List<Pair<Int, Int>>, active: Set<Pair<Int, Int>>): Boolean {
+        if (!areCollinear(selected)) return false
+        val ordered = orderAlongLine(selected) ?: return false
+        for (i in 1 until ordered.size) {
+            if (hasBlockerBetween(ordered[i - 1], ordered[i], active)) return false
+        }
+        return true
+    }
+
+    /** Parmağın izlediği yol: her seçim bir öncekinin komşusu. */
+    private fun isNeighbourChain(selected: List<Pair<Int, Int>>): Boolean {
+        for (i in 1 until selected.size) {
+            if (!neighbours(selected[i - 1], selected[i])) return false
+        }
+        return true
+    }
+
+    /** Seçimleri hat üzerinde uçtan uca sıralar; doğru çizgi değilse null döner. */
     private fun orderAlongLine(selected: List<Pair<Int, Int>>): List<Pair<Int, Int>>? {
         if (selected.size == 2) return selected
         val a = selected[0]
@@ -95,7 +124,7 @@ object RuleEngine {
 
     /** Matematik kontrolü: sıra bağımsız. */
     fun mathMatches(values: List<Int>, kind: RuleKind, target: Int): Boolean = when (kind) {
-        RuleKind.SUM -> values.sum() == target
+        RuleKind.SUM -> values.size in 2..4 && values.sum() == target
         RuleKind.DIFF -> values.size == 2 && abs(values[0] - values[1]) == target
         RuleKind.PRODUCT -> values.size == 2 && values[0] * values[1] == target
         RuleKind.QUOTIENT -> values.size == 2 && quotientMatches(values[0], values[1], target)
@@ -151,7 +180,10 @@ object RuleEngine {
         }
     }
 
-    /** Tahtadaki tüm geçerli hamleler (geometri + matematik). */
+    /**
+     * Tahtadaki tüm geçerli hamleler (geometri + matematik).
+     * Arama, aynı hat üzerindeki seçimlerle sınırlandığı için 8x8 tahtada bile hızlıdır.
+     */
     fun findAllMoves(
         cells: List<BlockCell>,
         kind: RuleKind,
@@ -163,7 +195,7 @@ object RuleEngine {
         val activeCoords = active.map { it.coord }.toSet()
         val moves = mutableListOf<List<Pair<Int, Int>>>()
 
-        for (size in groupSizes.filter { it in 2..3 }) {
+        for (size in groupSizes.filter { it in 2..4 }) {
             if (active.size < size) continue
             forEachCombination(active, size) { combo ->
                 val coords = combo.map { it.coord }
@@ -189,8 +221,8 @@ object RuleEngine {
             var i = start
             while (i <= items.size - left) {
                 chosen.add(items[i])
-                // Yalnızca aynı hatta olan seçimler dallanmaya devam eder: 10x10 tahtada arama
-                // C(100,3) yerine yaklaşık hücre başına birkaç çizgiyle sınırlı kalır.
+                // Yalnızca aynı hatta olan seçimler dallanmaya devam eder: 8x8 tahtada arama
+                // kombinasyon patlaması yaşamaz, ipucu anında bulunur.
                 if (chosen.size < 2 || areCollinear(chosen.map { it.coord })) {
                     walk(i + 1, left - 1)
                 }
@@ -203,47 +235,63 @@ object RuleEngine {
 
     /**
      * Hedefi sağlayan bir blok grubunun değerlerini üretir.
-     * Böylece üretici tahta kurarken her grubun hedefi tutturacağı garanti altındadır.
+     * Tahta kurucu, hedefin BÜTÜN kombinasyonlarını eşit sıklıkta dağıtmak için
+     * [combosFor] kullanır; bu fonksiyon ipucu/kurtarma için tek grup üretir.
      */
     fun operandsFor(kind: RuleKind, target: Int, groupSize: Int, random: Random): List<Int>? {
-        if (groupSize == 3 && kind != RuleKind.SUM) return null
+        if (groupSize !in 2..4) return null
+        if (kind != RuleKind.SUM && groupSize != 2) return null
+        val all = combosFor(kind, target, groupSize)
+        return all[random.nextInt(all.size)].shuffled(random)
+    }
+
+    /**
+     * Hedefi sağlayan TÜM kombinasyonlar (sırasız). Tahta üretiminde deste olarak kullanılır:
+     * böylece 1+4, 2+3, 0+5 ... hepsi aynı oranda tahtaya gelir.
+     */
+    fun combosFor(kind: RuleKind, target: Int, groupSize: Int): List<List<Int>> {
+        if (kind == RuleKind.SUM) return sumCombos(target, groupSize)
+        if (groupSize != 2) return emptyList()
         return when (kind) {
-            RuleKind.SUM -> {
-                if (groupSize == 2) {
-                    val a = random.nextInt(0, target + 1)
-                    listOf(a, target - a)
-                } else {
-                    val a = random.nextInt(0, target + 1)
-                    val b = random.nextInt(0, target - a + 1)
-                    listOf(a, b, target - a - b)
-                }
-            }
-
-            RuleKind.DIFF -> {
-                val small = random.nextInt(0, max(1, minOf(target + 4, 12)))
-                listOf(small + target, small)
-            }
-
-            RuleKind.PRODUCT -> factorPair(target, random)?.let { (x, y) ->
-                if (random.nextBoolean()) listOf(x, y) else listOf(y, x)
-            }
-
-            RuleKind.QUOTIENT -> {
-                val divisor = if (target == 0) random.nextInt(1, 11) else random.nextInt(2, 11)
-                listOf(target * divisor, divisor)
-            }
+            RuleKind.DIFF -> (0..max(0, min(target + 8, 20))).map { small -> listOf(small + target, small) }
+            RuleKind.PRODUCT -> (1..12).mapNotNull { d ->
+                if (target % d == 0 && target / d <= 12) listOf(d, target / d) else null
+            }.distinctBy { it.sorted() }
+            RuleKind.QUOTIENT -> (1..10).mapNotNull { divisor ->
+                val dividend = target * divisor
+                if (dividend <= 99 && divisor > 0) listOf(dividend, divisor) else null
+            }.distinctBy { it.sorted() }
+            RuleKind.SUM -> emptyList()
         }
     }
 
-    private fun factorPair(target: Int, random: Random): Pair<Int, Int>? {
-        if (target == 0) return 0 to random.nextInt(1, 11)
-        val pairs = (1..12).mapNotNull { d ->
-            if (target % d == 0 && target / d <= 12) d to target / d else null
+    /** Toplamı hedefe eşit, azalmayan tüm sayı üçlüleri/dörtlüleri. */
+    private fun sumCombos(target: Int, size: Int): List<List<Int>> {
+        if (target < 0 || size !in 2..4) return emptyList()
+        val out = mutableListOf<List<Int>>()
+        val current = ArrayList<Int>(size)
+        fun walk(minValue: Int, left: Int) {
+            val slots = size - current.size
+            if (slots == 1) {
+                if (left >= minValue) {
+                    current.add(left)
+                    out.add(current.toList())
+                    current.removeAt(current.size - 1)
+                }
+                return
+            }
+            var v = minValue
+            while (v <= left) {
+                current.add(v)
+                walk(v, left - v)
+                current.removeAt(current.size - 1)
+                v++
+            }
         }
-        if (pairs.isEmpty()) return null
-        return pairs[random.nextInt(pairs.size)]
+        walk(0, target)
+        return out
     }
 
     /** Çarpım hedefi tahtaya yazılabilir mi? Müfredat kurulumunda kullanılır. */
-    fun isProductTargetReachable(target: Int): Boolean = factorPair(target, Random(1)) != null
+    fun isProductTargetReachable(target: Int): Boolean = combosFor(RuleKind.PRODUCT, target, 2).isNotEmpty()
 }

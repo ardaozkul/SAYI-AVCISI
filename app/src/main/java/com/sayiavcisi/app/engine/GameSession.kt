@@ -16,10 +16,11 @@ import kotlin.random.Random
 /**
  * Oyunun durum makinesi. Kurallar Compose'dan ayrı tutulur, böylece birim testleriyle doğrulanabilir.
  *
- * - Çocuk taş seçer; ikili bölümlerde iki seçimde otomatik denenir, 2/3 karışık bölümlerde EŞLEŞTİR gerekir.
- * - Geçersiz hamle puan düşürmez, yalnızca seriyi sıfırlar.
- * - Hiç geçerli hamle kalmazsa ALTIN KURTARMA (ücretsiz, joker hakkı harcamadan) tahtayı yeniden kurar.
- * - Bir günde en fazla 100 puan kazanılır; jokerler puandan götürür.
+ * - Çocuk bir bloğa basılı tutar, parmağını komşu bloklara sürükler; bırakınca hamle OTOMATİK
+ *   kontrol edilir. "EŞLEŞTİR" düğmesi yoktur.
+ * - Doğruysa taşlar yeşil parlayıp patlar, yanlışsa kırmızı olup sarsılır ve puan azalır.
+ * - 2, 3 veya 4 blok seçilebilir. 3+ blokta KOMBO bonusu ve büyük kutlama vardır.
+ * - Hiç geçerli hamle kalmaza YILDIZ DESTEĞİ ücretsiz olarak taşları yeniden dizer.
  */
 class GameSession(
     val spec: LevelSpec,
@@ -31,15 +32,9 @@ class GameSession(
 
     /** Cihaz ilerleme deposu ile oturum arasındaki ince arayüz. */
     interface ProgressBridge {
-        /** Bugün brüt olarak kazanılan puan (tavan 100). */
         fun grossEarnedToday(): Int
-
-        /** Doğru hamle/bonus puanı günlük brüt kazanca eklenir. */
         fun addGrossEarned(delta: Int)
-
-        /** Joker harcaması günlük puandan düşülür (tavanı etkilemez). */
         fun addJokerSpending(amount: Int)
-
         fun recordAttempt(
             operation: OperationType,
             isCorrect: Boolean,
@@ -47,7 +42,6 @@ class GameSession(
             prompt: String,
             responseTimeMs: Long
         )
-
         fun addRewards(goldDelta: Int, diamondDelta: Int)
         fun markLevelCompleted(levelId: String)
         fun saveSnapshot(encoded: String)
@@ -56,10 +50,9 @@ class GameSession(
 
     private val allowedSizes = BoardBuilder.allowedSizesFor(spec)
 
-    /**
-     * Süreli modda bu bölüm için tanınan saniye. Bölüm kendi limiti yoksa planlanan dakikası kadar
-     * süre alır; ebeveynin verdiği ek süre (+/-) buna ilave edilir. Rahat modda hiç sayaç çalışmaz.
-     */
+    /** Aynı anda seçilebilecek en fazla blok (toplamada 4, diğer işlemlerde 2). */
+    val maxGroupSize: Int = allowedSizes.max()
+
     private val levelTimeLimitSeconds: Int? = if (timedMode) {
         ((spec.timeLimitSeconds ?: spec.minutes * 60) + extraTimeSeconds).coerceAtLeast(30)
     } else null
@@ -73,13 +66,20 @@ class GameSession(
     var hinted: List<Pair<Int, Int>> by mutableStateOf(emptyList())
         private set
 
+    /** Son doğru hamlenin taşları: yeşil parlama efekti için. */
+    var lastMatchedCoords: List<Pair<Int, Int>> by mutableStateOf(emptyList())
+        private set
+
+    /** Son yanlış hamlenin taşları: kırmızı sarsılma efekti için. */
+    var lastWrongCoords: List<Pair<Int, Int>> by mutableStateOf(emptyList())
+        private set
+
     var message: String by mutableStateOf(CurriculumRepository.objectiveText(spec))
         private set
 
     var levelScore by mutableIntStateOf(0)
         private set
 
-    /** Kutlama ekranında gösterilen bölüm ödülleri. */
     var rewardGold by mutableIntStateOf(0)
         private set
 
@@ -108,6 +108,19 @@ class GameSession(
     var rescueTick by mutableIntStateOf(0)
         private set
 
+    /** 3 veya 4 taşlı kombinasyonlarda büyük kutlama efektini tetikler. */
+    var comboSize by mutableIntStateOf(0)
+        private set
+
+    var comboBonus by mutableIntStateOf(0)
+        private set
+
+    var comboPoints by mutableIntStateOf(0)
+        private set
+
+    var comboTick by mutableIntStateOf(0)
+        private set
+
     var isRescueUsed by mutableStateOf(false)
         private set
 
@@ -120,7 +133,6 @@ class GameSession(
     var doubleNextActive by mutableStateOf(false)
         private set
 
-    /** Son denemenin sonucu (UI efektleri ve testler için). */
     var lastResult: MatchResult? by mutableStateOf(null)
         private set
 
@@ -132,9 +144,6 @@ class GameSession(
     var secondsLeft: Int? = levelTimeLimitSeconds
         private set
 
-    /** İkili ve üçlü grupların birlikte kullanılabildiği bölümlerde onay düğmesi gerekir. */
-    val needsConfirm: Boolean get() = allowedSizes.size > 1
-
     val clearedFraction: Float
         get() {
             val total = board.cells.size
@@ -142,20 +151,52 @@ class GameSession(
             return (total - board.activeCells().size).toFloat() / total.toFloat()
         }
 
+    // ---- Parmakla seçim ----------------------------------------------------------------
+
+    /** Bir bloğa basıldı: seçimi başlatır (ya da mevcut seçime ekler). */
+    fun beginSelection(coord: Pair<Int, Int>) {
+        if (isFinished || isTimeUp) return
+        val cell = board.cells.firstOrNull { it.coord == coord } ?: return
+        if (cell.isCleared) return
+        hinted = emptyList()
+        if (selected.contains(coord)) return
+        selected = if (selected.size >= maxGroupSize) listOf(coord) else selected + coord
+    }
+
+    /** Parmak yeni bir komşu bloğa girdi. Geri dönülürse seçim kısalır. */
+    fun dragInto(coord: Pair<Int, Int>) {
+        if (isFinished || isTimeUp) return
+        val cell = board.cells.firstOrNull { it.coord == coord } ?: return
+        if (cell.isCleared) return
+        val existing = selected.indexOf(coord)
+        if (existing >= 0) {
+            if (existing < selected.size - 1) selected = selected.take(existing + 1)
+            return
+        }
+        if (selected.size >= maxGroupSize) return
+        selected = selected + coord
+    }
+
+    /** Parmak kalktı. Sürükleyerek seçtiyse hamle anında denenir; tek dokunuşta beklenir. */
+    fun endGesture(autoSubmit: Boolean) {
+        if (autoSubmit && selected.size >= 2) submit()
+    }
+
+    /** Tek dokunuşla seçim (erişilebilirlik ve tıklayarak oynayan çocuklar için). */
     fun tapCell(coord: Pair<Int, Int>) {
         if (isFinished || isTimeUp) return
         val cell = board.cells.firstOrNull { it.coord == coord } ?: return
         if (cell.isCleared) return
-
         hinted = emptyList()
         selected = if (selected.contains(coord)) {
             selected.filter { it != coord }
         } else {
             val next = selected + coord
-            if (next.size > allowedSizes.max()) next.take(allowedSizes.max()) else next
+            if (next.size > maxGroupSize) next.take(maxGroupSize) else next
         }
-        if (!needsConfirm && selected.size == 2) submit()
     }
+
+    // ---- Hamle -------------------------------------------------------------------------
 
     fun submit(): MatchResult {
         if (selected.size < 2) {
@@ -174,11 +215,13 @@ class GameSession(
         }
 
         val expression = RuleEngine.expressionOf(values, spec.ruleKind)
+        val raw = ScoreEngine.matchPoints(spec, values.size, streak + 1, doubleNextActive)
+        val bonus = ScoreEngine.comboBonus(values.size)
         val room = (ScoreEngine.DAILY_CAP - bridge.grossEarnedToday()).coerceAtLeast(0)
-        val granted = ScoreEngine.matchPoints(spec, values.size, streak + 1, doubleNextActive)
-            .coerceAtMost(room)
+        val dailyGrant = raw.coerceAtMost(room)
 
         val clearedCoords = selected.toSet()
+        lastMatchedCoords = selected.toList()
         board = board.copy(
             cells = board.cells.map {
                 if (clearedCoords.contains(it.coord)) it.copy(isCleared = true) else it
@@ -190,21 +233,29 @@ class GameSession(
         streak += 1
         correctCount += 1
         movesMade += 1
-        levelScore += granted
+        levelScore += raw
         correctTick += 1
-        bridge.addGrossEarned(granted)
+        comboSize = values.size
+        comboBonus = bonus
+        comboPoints = raw
+        if (values.size >= 3) comboTick += 1
+        bridge.addGrossEarned(dailyGrant)
         bridge.recordAttempt(spec.operation, true, values, prompt, elapsedMs())
         lastAttemptStartedAt = System.currentTimeMillis()
-        message = "$expression • Hedef ${spec.target} ✓  +$granted puan"
+        message = if (bonus > 0) {
+            "$expression • ${values.size}'lü kombo!  +$raw puan"
+        } else {
+            "$expression • +$raw puan"
+        }
 
         if (board.isCleared()) {
             finishLevel()
-            lastResult = MatchResult(true, expression, message, granted)
+            lastResult = MatchResult(true, expression, message, raw, comboSize = values.size)
         } else {
             bridge.saveSnapshot(encodeSnapshot())
             val rescued = BoardDoctor.hint(board, spec) == null
-            if (rescued) goldenRescue()
-            lastResult = MatchResult(true, expression, message, granted, usedRescue = rescued)
+            if (rescued) starRescue()
+            lastResult = MatchResult(true, expression, message, raw, usedRescue = rescued, comboSize = values.size)
         }
         return lastResult!!
     }
@@ -213,26 +264,43 @@ class GameSession(
         mistakes += 1
         streak = 0
         wrongTick += 1
+        lastWrongCoords = selected.toList()
+        val before = levelScore
+        levelScore = (levelScore - ScoreEngine.WRONG_PENALTY).coerceAtLeast(0)
         selected = emptyList()
-        message = reason
+        message = "$reason  (−${before - levelScore} puan)"
         bridge.recordAttempt(spec.operation, false, values, prompt, elapsedMs())
         lastAttemptStartedAt = System.currentTimeMillis()
-        lastResult = MatchResult(false, "", reason, 0)
+        lastResult = MatchResult(false, "", message, -(before - levelScore), comboSize = values.size)
         return lastResult!!
     }
 
     /**
-     * ALTIN KURTARMA: hiç geçerli hamle kalmadığında tahtayı yeniden dizer.
-     * Gerekirse hesabın dışında sihirli blok eklenir; çocuk hiçbir zaman tıkanmaz.
-     * Bedavadır: puan, joker veya seri gitmez.
+     * YILDIZ DESTEĞİ: hiç geçerli hamle kalmadığında tahtayı yeniden dizer.
+     * Gerekirse hesabın dışında yardımcı blok eklenir; çocuk hiçbir zaman tıkanmaz.
+     * Bedavadır: puan, joker veya seri gitmez. Ekranda yıldız efektiyle duyurulur.
      */
-    fun goldenRescue(): Boolean {
+    fun starRescue(): Boolean {
         val outcome = BoardDoctor.rescue(board, spec) ?: return false
         board = outcome.board
         isRescueUsed = true
         rescueTick += 1
-        val spawnNote = if (outcome.spawnedCount > 0) " ${outcome.spawnedCount} sihirli blok eklendi." else ""
-        message = "ALTIN KURTARMA! Kalan taşlar yeniden dizerildi.$spawnNote"
+        lastWrongCoords = emptyList()
+        val spawnNote = if (outcome.spawnedCount > 0) " ${outcome.spawnedCount} yardımcı blok eklendi." else ""
+        message = "⭐ YILDIZ DESTEĞİ! Kalan taşlar yeniden dizildi.$spawnNote"
+        return true
+    }
+
+    /** Ücretsiz ipucu: doğru bir grubu parlatır. Puan götürmez. */
+    fun showHint(): Boolean {
+        if (isFinished || isTimeUp) return false
+        val move = BoardDoctor.hint(board, spec)
+        if (move == null) {
+            starRescue()
+            return false
+        }
+        hinted = move
+        message = "İpucu: parlayan ${move.size} taşı sürükle."
         return true
     }
 
@@ -243,19 +311,7 @@ class GameSession(
             return false
         }
         val ok = when (type) {
-            JokerType.HINT -> {
-                val move = BoardDoctor.hint(board, spec)
-                if (move == null) {
-                    goldenRescue()
-                    false
-                } else {
-                    hinted = move
-                    val values = move.map { coord -> board.cells.first { it.coord == coord }.value }
-                    message = "İpucu: ${values.joinToString(" ve ")} taşlarını seç, ${spec.ruleKind.unitLabel} ${spec.target} olur."
-                    true
-                }
-            }
-
+            JokerType.HINT -> showHint()
             JokerType.RESHAPE -> {
                 val outcome = BoardDoctor.rescue(board, spec)
                 if (outcome == null) false else {
@@ -278,7 +334,6 @@ class GameSession(
         return true
     }
 
-    /** Süre modunda her saniye çağrılır. */
     fun onTick() {
         val left = secondsLeft ?: return
         if (isFinished || isTimeUp) return
@@ -293,12 +348,7 @@ class GameSession(
         isFinished = true
         val flawless = mistakes == 0 && !isRescueUsed
         val bonus = ScoreEngine.timeBonus(secondsLeft)
-        if (bonus > 0) {
-            val room = (ScoreEngine.DAILY_CAP - bridge.grossEarnedToday()).coerceAtLeast(0)
-            val granted = bonus.coerceAtMost(room)
-            bridge.addGrossEarned(granted)
-            levelScore += granted
-        }
+        if (bonus > 0) levelScore += bonus
         val (gold, diamonds) = ScoreEngine.completionRewards(spec, flawless, isRescueUsed)
         rewardGold = gold
         rewardDiamonds = diamonds
@@ -373,6 +423,8 @@ class GameSession(
         isFinished = cells.none { !it.isCleared }
         selected = emptyList()
         hinted = emptyList()
+        lastMatchedCoords = emptyList()
+        lastWrongCoords = emptyList()
         return true
     }
 
@@ -381,11 +433,16 @@ class GameSession(
         board = BoardBuilder.build(spec, Random(newSeed), newSeed)
         selected = emptyList()
         hinted = emptyList()
+        lastMatchedCoords = emptyList()
+        lastWrongCoords = emptyList()
         levelScore = 0
         streak = 0
         mistakes = 0
         correctCount = 0
         movesMade = 0
+        comboSize = 0
+        comboBonus = 0
+        comboPoints = 0
         isFinished = false
         isTimeUp = false
         isRescueUsed = false

@@ -3,24 +3,17 @@ package com.sayiavcisi.app.engine
 import com.sayiavcisi.app.model.LevelSpec
 
 /**
- * İlerleme kuralları: bölümler sırayla açılır, günler birbirine bağlıdır.
- * Harita ekranı ve birim testleri aynı kaynağı kullanır.
+ * İlerleme kuralları.
+ *
+ * Bütün bölümler baştan açıktır: çocuk toplama, çıkarma, çarpım tablosu ve bölme arasında
+ * serbestçe gezebilir; oyunu denemek isteyen veli de istediği bölüme girebilir.
+ * Tamamlanan bölümler listede ✓ olarak işaretlenir.
  */
 object ProgressRules {
 
-    fun isLevelUnlocked(spec: LevelSpec, completedLevelIds: Set<String>): Boolean {
-        val dayLevels = CurriculumRepository.levelsForDay(spec.dayNumber)
-        val index = dayLevels.indexOfFirst { it.levelId == spec.levelId }
-        if (index <= 0) return isDayUnlocked(spec.dayNumber, completedLevelIds)
-        return completedLevelIds.contains(dayLevels[index - 1].levelId)
-    }
+    fun isLevelUnlocked(spec: LevelSpec, completedLevelIds: Set<String>): Boolean = true
 
-    fun isDayUnlocked(day: Int, completedLevelIds: Set<String>): Boolean {
-        if (day <= 1) return true
-        val previous = CurriculumRepository.levelsForDay(day - 1)
-        return previous.any { completedLevelIds.contains(it.levelId) } ||
-            CurriculumRepository.isDayCompleted(day - 1, completedLevelIds)
-    }
+    fun isDayUnlocked(day: Int, completedLevelIds: Set<String>): Boolean = true
 
     fun isLevelCompleted(spec: LevelSpec, completedLevelIds: Set<String>): Boolean =
         completedLevelIds.contains(spec.levelId)

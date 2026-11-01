@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
@@ -222,6 +223,74 @@ fun FloatingScore(
             )
         }
     }
+}
+
+/**
+ * Yıldız yağmuru: 3-4'lü komboda ve YILDIZ DESTEĞİ'nde ekrana altın yıldızlar saçar.
+ * `trigger` her arttığında bir kez oynar.
+ */
+@Composable
+fun StarBurst(
+    trigger: Int,
+    modifier: Modifier = Modifier,
+    color: Color = Color(0xFFFFC93C),
+    count: Int = 16
+) {
+    val total = count.coerceIn(1, 24)
+    val stars = remember(total) {
+        List(total) { i ->
+            BurstDot(
+                angle = (i.toFloat() / total) * 2f * PI.toFloat() + Random.nextFloat() * 0.5f,
+                speed = 0.6f + Random.nextFloat() * 0.7f,
+                radiusDp = 7f + Random.nextFloat() * 7f,
+                startDelay = Random.nextFloat() * 0.2f
+            )
+        }
+    }
+    val progress = remember { Animatable(0f) }
+    var active by remember { mutableStateOf(false) }
+
+    LaunchedEffect(trigger) {
+        if (trigger == 0) return@LaunchedEffect
+        progress.snapTo(0f)
+        active = true
+        progress.animateTo(1f, tween(durationMillis = 1200, easing = LinearEasing))
+        active = false
+    }
+
+    if (active) {
+        Canvas(modifier = modifier) {
+            val travel = min(size.width, size.height) * 0.46f
+            val p = progress.value
+            for (star in stars) {
+                val local = ((p - star.startDelay) / (1f - star.startDelay)).coerceIn(0f, 1f)
+                if (local <= 0f) continue
+                val r = travel * star.speed * local
+                val cx = center.x + cos(star.angle) * r
+                val cy = center.y + sin(star.angle) * r
+                val radius = star.radiusDp * density * (1f - 0.35f * local)
+                drawPath(
+                    path = starPath(cx, cy, radius, 5, local * 3f),
+                    color = color.copy(alpha = (1f - local * 0.7f).coerceIn(0f, 1f))
+                )
+            }
+        }
+    }
+}
+
+/** Beş köşeli yıldız çizimi (Compose Path). */
+private fun starPath(cx: Float, cy: Float, radius: Float, points: Int, rotation: Float): Path {
+    val path = Path()
+    val step = PI.toFloat() / points
+    for (i in 0 until points * 2) {
+        val r = if (i % 2 == 0) radius else radius * 0.45f
+        val angle = i * step - PI.toFloat() / 2f + rotation
+        val x = cx + cos(angle) * r
+        val y = cy + sin(angle) * r
+        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    }
+    path.close()
+    return path
 }
 
 /**

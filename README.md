@@ -1,205 +1,170 @@
-# 🦊 SAYI AVCISI – Çocuklar İçin Matematik Bulmaca Oyunu (Android APK)
+# 🦊 SAYI AVCISI — Çocuklar İçin Sayı Avlama Oyunu (Android APK)
 
-**SAYI AVCISI**, 3. sınıf seviyesindeki çocukların **toplama (+), çıkarma (−), çarpma (×) ve bölme (÷)** işlemlerini
-oyun oynarken pekiştirmesini sağlayan, **Kotlin & Jetpack Compose** ile yazılmış, **%100 çevrimdışı (offline)**
-çalışan 5 günlük bir Android matematik bulmaca oyunudur.
+**SAYI AVCISI**, toplama, çıkarma, çarpma ve bölmeyi oyun oynayarak pekiştiren,
+**Kotlin & Jetpack Compose** ile yazılmış, **%100 çevrimdışı** çalışan bir Android bulmaca oyunudur.
 
-Çocuk tahtadaki sayı bloklarını hedefe göre avlar: **bölümde tek bir hedef vardır** (ör. "Toplamı 7"),
-tahtadaki **her** blok grubu o hedefi sağlar. Sıra önemli değildir; taşlar yatay, dikey, çapraz ve her iki
-yönde de eşleşebilir — aralarında blok kalmadığı anda uzaktaki taşlar da buluşur.
+Bir sayıya basılı tut, parmağını komşu sayılara sürükle ve bırak. Hamle kendiliğinden kontrol edilir:
+doğruysa taşlar yeşil parlar, yanlışsa kırmızı olup sarsılır ve puan azalır. Düğmeye basmak yok.
 
-> **2.0.0 motoru baştan yazdı.** 1.x'te çocuk "bazen kabul eden bazen etmeyen" eşleşmeler yaşıyordu
-> (çok hedefli bölümler + sıraya duyarlı çıkarma/bölme kontrolü). Şimdi kural tek hedefe indirgendi,
-> tüm işlemler sıra gözetmez hale geldi ve her tahta **eşleşmeyen tek blok kalmayacak şekilde** üretiliyor.
+> **3.0.0 oyunu baştan sadeleştirdi.** Ekranın üstünde artık yalnızca bölüm adı (“7 toplama”) ve
+> yıldız puanı var. Hedef kartları, joker kutuları ve bilgi şeritleri kaldırıldı. Toplamada
+> **2, 3 ve 4 taşlı** kombinasyonlar geçerli; hedefin bütün kombinasyonları tahtaya eşit dağıtılır.
+> Çarpım tablosu dahil bütün bölümler açıktır.
 
 ---
 
-## 📲 KURULUM DOSYASI (APK) İNDİRME ADRESLERİ
+## 📲 KURULUM DOSYASI (APK)
 
-Derlenmiş ve doğrudan Android telefon/tabletlere kurulmaya hazır **APK** dosyaları:
+Derlenmiş ve doğrudan Android telefon/tabletlere kurulmaya hazır **APK v3.0.0**:
 
-- 🚀 **Doğrudan APK İndirme Adresi (Ana Paket, v2.0.0):**
+- 🚀 **Doğrudan indirme (ana paket):**
   👉 **[https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk)**
-- 📦 **GitHub Depo İçi APK Sayfası:**
-  👉 **[https://github.com/ardaozkul/SAYI-AVCISI/blob/main/SAYI-AVCISI.apk](https://github.com/ardaozkul/SAYI-AVCISI/blob/main/SAYI-AVCISI.apk)**
-- 📂 **Alternatif APK Konumları (Depo İçi):**
-  - Release APK: [`apk/SAYI-AVCISI-release.apk`](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/apk/SAYI-AVCISI-release.apk)
-  - Debug APK: [`apk/SAYI-AVCISI-debug.apk`](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/apk/SAYI-AVCISI-debug.apk)
-  - Web Giriş / Bilgilendirme Sayfası: [`index.html`](https://github.com/ardaozkul/SAYI-AVCISI/blob/main/index.html)
+- 📦 GitHub üzerinde APK dosyası:
+  👉 **[SAYI-AVCISI.apk](https://github.com/ardaozkul/SAYI-AVCISI/blob/main/SAYI-AVCISI.apk)**
+- 📂 Alternatif kopyalar:
+  - [`apk/SAYI-AVCISI-release.apk`](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/apk/SAYI-AVCISI-release.apk)
+  - [`apk/SAYI-AVCISI-debug.apk`](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/apk/SAYI-AVCISI-debug.apk)
+- 🌐 **Giriş / bilgilendirme sayfası:** [`index.html`](index.html) — APK adresi, kurulum adımları ve ekran görüntüleri.
 
-**Gereksinim:** Android 7.0 (API 24) ve üzeri · İndirme boyutu ~12 MB · İnternet gerekmez, tüm ilerleme cihazda saklanır.
+**Gereksinim:** Android 7.0 (API 24) ve üzeri · ~12 MB · İnternet gerekmez · İlerleme cihazda saklanır.
 
----
-
-## 📸 OYUN İÇİNDEN GERÇEK EKRAN GÖRÜNTÜLERİ (v2.0.0)
-
-Aşağıdaki kareler Android emülatöründe (Pixel 5) kurulu **2.0.0 APK**'dan `adb screencap` ile gerçek olarak
-alındı; oyunun kendisi `tools/capture-screenshots.mjs` tarafından (uiautomator ile) gerçekten oynanarak üretildi.
-
-| 🦊 Giriş Ekranı | 🗺️ 5 Günlük Macera Haritası |
-|:---:|:---:|
-| ![Giriş](docs/screenshots/01-giris-ekrani.png) | ![Harita](docs/screenshots/02-macera-haritasi.png) |
-
-| 🌳 1. Gün: Toplama 4×4 | ✨ Eşleşme Sonrası (temizlenen taşlar + puan) |
-|:---:|:---:|
-| ![Toplama](docs/screenshots/03-oyun-tahtasi-toplama.png) | ![Eşleşme](docs/screenshots/04-eslesme-sonrasi.png) |
-
-| 🎉 Bölüm Bitti Kutlaması | ⛏️ 2. Gün: Çıkarma (Hazine Mağarası) |
-|:---:|:---:|
-| ![Kutlama](docs/screenshots/05-bolum-bitti-kutlama.png) | ![Çıkarma](docs/screenshots/06-oyun-tahtasi-cikarma.png) |
-
-| 🏰 3. Gün: Çarpma (Çarpım Kalesi) | 🚀 4. Gün: Bölme (Bölme Uzayı) |
-|:---:|:---:|
-| ![Çarpma](docs/screenshots/07-oyun-tahtasi-carpma.png) | ![Bölme](docs/screenshots/08-oyun-tahtasi-bolme.png) |
-
-| 🏝️ 10×10 Büyük Final (~15 dk) | 🎯 Serbest Mod (yön/mesafe yok) |
-|:---:|:---:|
-| ![Final](docs/screenshots/09-buyuk-final-10x10.png) | ![Serbest](docs/screenshots/10-serbest-mod-tahtasi.png) |
-
-| 👨‍👩‍👧 Ebeveyn Paneli | 📊 Günlük İlerleme ve Çarpım Tablosu Analizi |
-|:---:|:---:|
-| ![Ebeveyn](docs/screenshots/11-ebeveyn-paneli.png) | ![Analiz](docs/screenshots/12-ebeveyn-paneli-analiz.png) |
-
-> Kareleri yeniden üretmek için: `node tools/capture-screenshots.mjs app/build/outputs/apk/debug/app-debug.apk`
-> Orijinal gereksinim listesi: [docs/proje-gereksinimleri.md](docs/proje-gereksinimleri.md)
+### 3 adımda kurulum
+1. Telefonun tarayıcısından APK bağlantısına dokun ve dosyayı indir.
+2. Android “Bilinmeyen kaynaklardan uygulama yükleme” izni isterse bir kez onayla.
+3. “Sayı Avcısı” simgesine dokun; oyun çevrimdışı açılır.
 
 ---
 
-## 🆕 2.0.0 — SIFIRDAN YAZILAN MOTOR
+## 🎮 NASIL OYNANIR
 
-### 1. Tek hedef kuralı: "bazen oluyor bazen olmuyor" bitti
-- **Bir bölüm = tek hedef.** Bölümdeki her blok grubu aynı hedefi sağlar (`RuleKind` + `target`),
-  arayüzde hangi hedefin aktif olduğu tartışması yoktur.
-- **Sıra hiçbir işlemde önemli değil.** `RuleEngine.mathMatches` çıkarmada `|a−b|`, bölmede her iki
-  yönü de dener (`8÷2` ve `2÷8` tek kontrolde). Çocuk hangi taşa önce dokunduğunu düşünmez.
-- **Sıfır gerçek bir sayı olarak oyunda:** `0+1=1`, `5−5=0` (ikiz sayılar), `0×4=0`, `0÷7=0` bölümleri var;
-  sıfıra bölme üretimin hiçbir aşamasında oluşmaz.
-- **Geometri iki kuraldan biriyle sabit:** `LINE_OF_SIGHT` (aynı satır/sütun/45° çapraz + aralarında aktif
-  blok yok — ters yön dahil) veya `FREE` (yön ve mesafe serbest). Reddedilen her hamle ekranda tek cümleyle
-  açıklanır: *"Aralarında taş var, önce onu temizle"* gibi.
-
-### 2. Eşleşmeyen blok bırakmayan tahta üretimi
-- Tahta **tersine döşeme** ile kurulur: ızgara baştan 2'li/3'lü bitişik doğru parçalarına bölünür,
-  değerler grup grup hedefi sağlayacak şekilde atanır (`BoardBuilder`). Bu yüzden **her bölümde
-  eşleşmeyen tek sayı kalmaz** ve planlanan hamle sayısı tahtadan bellidir.
-- 100 bloklu **10×10 büyük final** dahil tüm tahtalar 3 farklı tohumla test edilir:
-  30 bölüm × 3 tohum = 90 tahta, tamamı sıfır kalan blokla kapanır.
-
-### 3. Tıkanma imkânsız: ALTIN KURTARMA + sihirli blok
-- Her doğru hamleden sonra `BoardDoctor` kalan taşlarda geçerli hamle olup olmadığına bakar.
-- Hamle kalmadıysa **ücretsiz** (puan/joker/seri gitmez) kurtarma devreye girer: kalan şekil yeniden
-  döşenir ve yeniden değerlenir.
-- Kalan şekil 2'li/3'lü gruplara hiç bölünemiyorsa **hesapta olmayan sihirli blok** boş/temizlenmiş bir
-  kareye eklenir — jokerler bitmiş olsa bile oyun asla bozulmaz.
-
-### 4. Puanlama: günde en fazla 100 puan, jokerler puandan götürür
-| Olay | Puan |
+| Adım | Ne olur |
 |:---|:---|
-| Doğru toplama / çıkarma / çarpma / bölme eşleşmesi | **+4 / +5 / +6 / +7** |
-| Üç taşlı grup | **+2** |
-| 6×6–7×7 tahta / 8×8–10×10 tahta | **+1 / +2** |
-| Üst üste doğru seri bonusu | **+0…+8** |
-| ⚡ Çifte Hamle aktifken doğru eşleşme | **2 kat** |
-| Süreli bölümü erken bitirme | **+1 / +3 / +5** |
-| 🔍 İpucu / 🔄 Yeniden Düzenle / ⚡ Çifte Hamle jokersi | **−5 / −10 / −5** |
-| Yanlış hamle | **puan gitmez**, sadece seri sıfırlanır |
-| **Günlük tavan** | **100 puan** (yeni günde otomatik sıfırlanır) |
+| 1 | Bir sayıya **basılı tut**. Taş sarıya döner. |
+| 2 | Parmağını **komşu sayılara sürükle**. Taşlar sarıdan turuncuya ısınır. |
+| 3 | Parmağını **bırak**. Hamle otomatik kontrol edilir; “EŞLEŞTİR” düğmesi yoktur. |
+| ✓ | Doğruysa taşlar yeşil parlayıp patlar, puan üstteki yıldıza uçar. |
+| ✗ | Yanlışsa taşlar kırmızı olup sarsılır ve bölüm puanından **2 puan** gider. |
 
-- Kazanım (brut) tavana göre, joker harcaması ayrı sayılır: günlük puan **0'ın altına düşmez, 100'ü aşmaz**.
-- Hatasız + kurtarmasız bitirilen bölüm **💎 2 elmas**, hatasız ama kurtarmalı **💎 1 elmas**,
-  her bölüm bitişi **🪙 10 + tahta boyu + bölüm no** altın getirir.
-
-### 5. 5 gün × 6 bölüm = günde ~60 dakika
-| Gün | Dünya | Bölümler (hedefler) | Süre |
-|:---:|:---|:---|:---:|
-| 1 | 🌲 Sayı Ormanı | +1 · +2 · +5 · +7 · +10 · +10 (serbest) | ~60 dk |
-| 2 | 💎 Hazine Mağarası | +13 · +16 · +20 (8×8) · −2 · −0 (ikiz) · −5 | ~60 dk |
-| 3 | 🏰 Çarpım Kalesi | −4 · −7 · −10 (8×8) · ×6 · ×12 · ×24 | ~60 dk |
-| 4 | 🚀 Bölme Uzayı | ×36 · ÷0 · ÷2 · ÷5 · ×48 (8×8) · ÷6 (8×8) | ~60 dk |
-| 5 | 🏝️ Matematik Adası | +25 · −15 · ×54 · ÷8 (süre baskısı) · **+30 10×10 final (15 dk)** · ×30 serbest | ~60 dk |
-
-Bölümler sırayla açılır; yarım kalan tahta cihazda saklanır ve **KALDIĞIN YERDEN DEVAM** ile aynı tahtaya dönülür.
-
-### 6. Çocuk dostu görsel dil ve efektler
-- **5 dünya paleti** (orman/mağara/kale/uzay/ada) + ebeveyn paneli paleti: her bölüm kendi dünyasının
-  gradyanını, blok rengini ve vurgu rengini alır. Bloklar pastel, rakamlar koyu mürekkep —
-  kontrast oranı **9.2:1 – 13.4:1** aralığında (çocuk okuyabilirliği için ölçüldü).
-- **Hedef kartı her zaman üstte:** "🎯 HEDEF 7 — Yediye ulaşan komşu sayılar", işlem, tahta boyutu,
-  kural adı ve yüzde halkası tek bakışta. Bölümün amacı asla tahmin edilmez.
-- Efektler: taşa göre gecikmeli **pop-in** dalgası, seçimde **büyüme + parlama halkası**, seçilen taşlar
-  arasında **çizgi çizilmesi**, doğru eşleşmede **parçacık patlaması + uçan puan**, yanlışta **sarsılan
-  uyarı şeridi**, bölüm bitiminde **konfeti yağmuru**, ilerleme **halkaları**, ⚡ çifte hamle rozeti,
-  ✨ ALTIN KURTARMA afişi, son 20 saniyede **kırmızı nabız atan sayaç**.
-- **NASIL OYNANIR kartı** bölüm açılırken kendini gösterir: hedef, geometri kuralı, örnek işlem
-  (`Örneğin 3 × 4 = 12`) ve joker maliyetleri.
-- Sesler cihazda sentezlenir (PCM, asset yok): doğru/yanlış/bonus/bölüm bitimi; ebeveyn panelinden kapatılır.
-
-### 7. Ebeveyn paneli (gerçek verilerle)
-- Bugünkü puan (x/100), toplam işlem, doğru/yanlış, ortalama cevap süresi, günlük oyun süresi.
-- Gün gün ilerleme halkaları ve "n/6 bölüm" sayaçları.
-- İşlem türü bazında başarı yüzdeleri, en çok zorlanılan işlemler, **çarpım tablosunda 0–10 zorlanma ısı haritası**.
-- Ayarlar: ses, süreli/rahat mod, ek süre (−15 / normal / +30 / +60 sn).
-- Kontrol edilmeden çalışan iki sıfırlama: **yalnızca bugünün puanı** veya **tüm ilerleme**.
+- **Komşuluk:** Yatay, dikey ve çapraz komşular geçerlidir. Aralarında taş kalmayan uzak sayılar
+  da (ör. aynı satırdaki `2` ve `5`) komşu sayılır. Düz giderken çapraza dönebilirsin.
+- **Grup boyutu:** Toplamada 2, 3 veya 4 taş; çıkarma/çarpma/bölmede 2 taş.
+- **Tek dokunuşla oynayanlar:** İki veya daha fazla taş seçili kalınca kısa bir bekleyişten sonra
+  hamle kendiliğinden kontrol edilir.
+- **Yıldız desteği:** Geçerli hamle kalmazsa oyun ücretsiz olarak kalan taşları yeniden dizer;
+  puan/joker gitmez, ekranda yıldız efektiyle duyurulur.
 
 ---
 
-## 🛠️ KURULUM VE DERLEME TALİMATLARI
+## 🆕 3.0.0 — NELER DEĞİŞTİ
 
-### Android Cihaza APK Kurulumu
-1. [`SAYI-AVCISI.apk`](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk) dosyasını indirin.
-2. Dosyaya dokunun, gerekirse *"Bilinmeyen kaynaklardan uygulama yüklemeye izin ver"* seçeneğini onaylayın.
-3. İnternet bağlantısı gerekmeden hemen oynayabilirsiniz.
+### 1. Bütün kombinasyonlar eşit
+- Tahta, hedefin **tüm** kombinasyonlarını içeren karıştırılmış bir desteden doldurulur.
+  “4 toplamı” bölümünde `0+4`, `1+3` ve `2+2` aynı sıklıkta gelir; tek bir kombinasyona sıkışmaz.
+- Toplamada `1+2+3`, `1+1+5`, `0+0+7` gibi üçlüler ve `0+1+2+4` gibi dörtlüler de geçerli.
+- Sıra ve yön önemsizdir: `1+4` ile `4+1`, `9−4` ile `4−9` aynı kabul edilir.
 
-### Kaynak Koddan Derleme
+### 2. Yeni parmak sürükleme ve geri bildirim
+- Basılı tutup sürükleyerek 2–4 taş seçilir; bırakınca hamle otomatik denenir.
+- Seçim sarı→turuncu; doğru hamlede yeşil parlama + patlama, yanlışta kırmızı + sarsılma.
+- Yanlış hamle bölüm puanından 2 puan götürür (puan 0’ın altına inmez).
+
+### 3. Kombo kutlaması
+- 3 taşlı komboda **SÜPER KOMBO**, 4 taşlı komboda **MÜTHİŞ KOMBO** kartı belirir.
+- Kocaman yazan puan, yıldız patlaması ve yukarıdaki yıldız sayacına doğru süzülen efekt.
+- Kombo puanı: 3 taş **+5**, 4 taş **+12** ekstra (üstüne seri ve tahta bonusu).
+
+### 4. Sade tasarım
+- Sıcak krem zemin, beyaz taşlar, koyu rakamlar; doğru yeşil, yanlış kırmızı.
+- Üstte yalnızca **bölüm adı** (“7 toplama”), ince ilerleme çizgisi ve **★ puan**.
+- Hedef kartı, joker kutuları, günlük tavan kutuları ve “nasıl oynanır” katmanı kaldırıldı.
+- Düğmeler ikon değil, yazılı: “İpucu” ve “Baştan”.
+
+### 5. Yeni bölüm yapısı — 66 bölüm, hepsi açık
+| Bölüm | İçerik | Tahta |
+|:---|:---|:---|
+| ➕ Toplama | 1’den 30’a ardışık hedefler; 3’lü ve 4’lü kombinasyonlar | 1–3 için 4×4, 4–30 için 6×6 |
+| ➖ Çıkarma | Farkı 1–12 | 4×4 / 6×6 |
+| ✖️ Çarpma Tablosu | 2, 4, 6 … 36 (16 hedef) | 4×4 / 6×6 |
+| ➗ Bölme | Kalansız bölme, 1–8 | 4×4 / 6×6 |
+
+- Kilit yoktur: çocuk veya veli istediği bölümü açıp deneyebilir; tamamlananlar ✓ ile işaretlenir.
+- Toplamanın ilk üç hedefinde kombinasyon sayısı az olduğu için tahta küçültülür.
+
+---
+
+## 📸 EKRAN GÖRÜNTÜLERİ (3.0.0)
+
+Kareler Android emülatöründe kurulu yeni APK’dan gerçek oynanışla alındı.
+
+| Giriş | Bölümler | 7 Toplama |
+|:---:|:---:|:---:|
+| ![Giriş](docs/screenshots/v3/01-giris.png) | ![Bölümler](docs/screenshots/v3/02-bolumler.png) | ![Oyun](docs/screenshots/v3/03-oyun.png) |
+
+| 3’lü Kombo | Yanlış Hamle | Tüm Bölümler |
+|:---:|:---:|:---:|
+| ![Kombo](docs/screenshots/v3/04-kombo.png) | ![Yanlış](docs/screenshots/v3/05-yanlis.png) | ![Bölümler](docs/screenshots/v3/06-bolumler-alt.png) |
+
+> Eski 2.0.0 kareleri [`docs/screenshots`](docs/screenshots) klasöründe tarihsel olarak durur;
+> yeni tasarımın kareleri [`docs/screenshots/v3`](docs/screenshots/v3) altındadır.
+
+---
+
+## 🛠️ KAYNAK KODDAN DERLEME
+
 ```bash
 git clone https://github.com/ardaozkul/SAYI-AVCISI.git
 cd SAYI-AVCISI
 ./gradlew testDebugUnitTest assembleDebug assembleRelease
-# debug  -> app/build/outputs/apk/debug/app-debug.apk
-# release-> app/build/outputs/apk/release/app-release.apk
+# debug   -> app/build/outputs/apk/debug/app-debug.apk
+# release -> app/build/outputs/apk/release/app-release.apk
 ```
 
-### Mimari (motor arayüzden ayrı ve test edilebilir)
+- Kotlin, Jetpack Compose (BOM 2025.12.01), minSdk 24, targetSdk 35.
+- Sürüm: `versionCode 4`, `versionName 3.0.0`.
+- Release APK, projede tanımlı debug imzasıyla üretilir; mağaza dışı kurulum içindir.
+
+### Mimari
 ```
-model/GameModels.kt        tek hedefli LevelSpec, Board, BlockCell, RuleKind, MatchRuleMode, JokerType
-engine/RuleEngine.kt       geometri + matematik doğrulama (sıra gözetmez), hamle arama, operand üretimi
-engine/BoardBuilder.kt     ızgarayı bitişik 2'li/3'lü gruplara bölen garantili tahta üretimi
-engine/BoardDoctor.kt      hamle bulma, ipucu, tıkanma tespiti, ALTIN KURTARMA + sihirli blok
-engine/CurriculumRepository 5 gün × 6 bölüm müfredatı, hedef metinleri
-engine/ScoreEngine.kt      puan, seri, tavan, joker maliyeti, ödüller
-engine/GameSession.kt      Compose'dan gözlemlenebilir durum makinesi + kayıt/geri yükleme
-engine/ProgressRules.kt    kilit açma sırası, gün ilerlemesi
-data/LocalProgressStorage  SharedPreferences: ilerleme, günlük brüt/harcama, yarım kalan tahta, istatistik
-ui/GameVisuals.kt          dünya paletleri, gradyanlar, kontrast güvencesi
-ui/GameEffects.kt          popIn / shake / pulse / ParticleBurst / FloatingScore / ConfettiRain / ProgressRing / ConnectionLine / GlowRing
-ui/GameScreenParts.kt      NumberTile, JokerButton, ObjectiveCard, ScoreBar
-ui/GameScreen.kt           oyun ekranı + nasıl oynanır / bölüm bitti / süre doldu katmanları
-ui/StartScreen.kt · AdventureMapScreen.kt · ParentPanelScreen.kt · SayiAvcisiApp.kt (yönlendirme)
+model/GameModels.kt         LevelSpec, Board, BlockCell, MatchResult
+engine/RuleEngine.kt        komşuluk/çizgi geometrisi, sıra bağımsız matematik, tüm kombinasyonlar
+engine/BoardBuilder.kt      garantili tahta döşemesi + kombinasyon destesi
+engine/BoardDoctor.kt       ipucu, tıkanma tespiti, yıldız desteği
+engine/CurriculumRepository 4 bölüm / 66 bölüm müfredatı
+engine/ScoreEngine.kt       puan, kombo bonusu, yanlış ceza, ödüller
+engine/GameSession.kt       sürükleme, otomatik kontrol, kayıt/geri yükleme
+engine/ProgressRules.kt     bütün bölümler açık, tamamlanan işaretleri
+data/LocalProgressStorage   SharedPreferences: ilerleme, istatistik, yarım tahta
+ui/GameScreen.kt            sade oyun ekranı, sürükleme katmanı, kombo efekti
+ui/GameScreenParts.kt       taş (sarı/turuncu/yeşil/kırmızı), yazılı düğmeler
+ui/GameEffects.kt           popIn, shake, parçacık, yıldız, konfeti, halka, çizgi
+ui/StartScreen.kt           sade giriş
+ui/AdventureMapScreen.kt    dört bölüm kartı ve hedef çipleri
+ui/ParentPanelScreen.kt     ebeveyn paneli (istatistik/ayarlar)
 ```
 
 ---
 
-## ✅ KALİTE KONTROL VE OTOMATİK TEST SONUÇLARI
+## ✅ TESTLER
 
-`app/src/test/java/com/sayiavcisi/app/EngineRulesTest.kt` motoru sahte depo köprüsüyle (FakeBridge) test eder;
-**22 test, 0 başarısız** (`./gradlew testDebugUnitTest`):
+`app/src/test/java/com/sayiavcisi/app/EngineRulesTest.kt` — **23 test, 0 başarısız**:
 
-1. Sıra gözetmeyen toplama/çıkarma/çarpma/bölme eşleşmeleri — ✅
-2. Bölüneni 0 olan ifadede sıfıra bölme asla kabul edilmez — ✅
-3. Geçersiz hamle puan düşürmez, yalnızca seriyi sıfırlar — ✅
-4. Görüş hattı kuralı: aradaki blok engeller, ters yön ve çapraz serbesttir — ✅
-5. Serbest modda yön/mesafe aranmaz — ✅
-6. 30 bölüm × 3 tohum: her tahta tamamen kapanır, her grup tek hedefi sağlar — ✅
-7. Plan sırasıyla oynanınca tahta koskoca temizlenir — ✅
-8. Rastgele oynansa bile asla tıkanılmaz (kurtarma gerekirse devreye girer) — ✅
-9. 10×10 büyük final kapanır — ✅
-10. Çıkmaz tahtada ALTIN KURTARMA yeniden dizer, tek kalan taşta sihirli blok doğar — ✅
-11. Günlük puan 100'ü aşmaz, 0'ın altına düşmez — ✅
-12. Jokerler puandan götürür ve hak düşürür — ✅
-13. ⚡ Çifte Hamle bir sonraki eşleşmeyi iki katlar — ✅
-14. Kaldığı yerden devam: kayıt/geri yükleme + bozuk kayıt güvenliği — ✅
-15. Müfredat biçimi: 5 gün × 6 bölüm, günde 55–65 dakika, hedefler kolaydan zora, dört işlem de var — ✅
-16. Hedef metinleri çocuğun okuyabileceği biçimde ("Toplamı 5 olan 2 veya 3 taşı seç") — ✅
+- Toplamada bütün ikili/üçlü/dörtlü kombinasyonlar kabul edilir; ters sıra da geçerli.
+- `0+4`, `1+3`, `2+2` aynı tahtada bulunur (eşit dağıtım).
+- Düz giderken çapraza dönme ve aralarında taş kalmayan uzak sayılar geçerli.
+- 66 bölüm × 2 tohum: her tahta tamamen kapanır, her grup hedefi tutar.
+- Plan sırasıyla oynanınca tahta temizlenir; rastgele oynanınca yıldız desteği devreye girer.
+- 4 taşlı komboda +12 kombo bonusu ve kutlama tetiklenir.
+- Yanlış hamlede −2 puan ve seri sıfırlanır.
+- Günlük tavan bölüm puanını kesmez; kayıt/geri yükleme ve joker hakları çalışır.
+- Müfredat: 30 toplama + 12 çıkarma + 16 çarpma + 8 bölme; hepsi açık.
 
-Ayrıca `assembleDebug` + `assembleRelease` APK'ları emülatörde kurulup **gerçek oyun akışı**
-(bölüm açma, eşleştirme, joker, bölüm bitişi, ebeveyn paneli) adb ile oynanarak doğrulandı.
+Ayrıca yeni APK emülatörde kurulup gerçek parmak sürükleme (2’li ve 3’lü kombo), doğru/yanlış
+geri bildirimi ve kombo kutlaması adb ile oynanarak doğrulandı.
+
+---
+
+## 🔒 GİZLİLİK
+
+- Hesap, reklam, analitik ve ağ izni yoktur.
+- Bütün ilerleme ve istatistikler yalnızca cihazdaki `SharedPreferences` içinde tutulur.
+- Ebeveyn panelinden ses, süreli/rahat mod ve ilerleme sıfırlama yönetilebilir.

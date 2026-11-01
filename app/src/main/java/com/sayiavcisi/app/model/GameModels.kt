@@ -66,7 +66,7 @@ data class LevelSpec(
     val gridSize: Int,
     val ruleKind: RuleKind,
     val target: Int,
-    /** Bir eşleşmede kullanılan blok sayıları. Çarpma/bölme için yalnızca [2]. */
+    /** Bir eşleşmede kullanılan blok sayıları. Toplamada [2, 3, 4]; diğer işlemlerde yalnızca [2]. */
     val groupSizes: List<Int>,
     val ruleMode: MatchRuleMode = MatchRuleMode.LINE_OF_SIGHT,
     val timeLimitSeconds: Int? = null,
@@ -108,5 +108,7 @@ data class MatchResult(
     val expression: String,
     val message: String,
     val pointsDelta: Int,
-    val usedRescue: Boolean = false
+    val usedRescue: Boolean = false,
+    /** Doğru hamlede seçilen taş sayısı (3 ve 4 için kombo kutlaması). */
+    val comboSize: Int = 0
 )

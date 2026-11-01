@@ -4,8 +4,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 /**
- * Bir dünya (bölüm seti) için tek renk kaynağı: arka plan, kutu yüzeyleri, vurgu ve parıltı renkleri.
- * Tile yüzleri açık (krem/pastel), sayı mürekkebi koyu tutulur; büyük rakamlar net okunsun diye.
+ * Tek renk kaynağı.
+ *
+ * Tasarım sadeleştirildi: sıcak krem zemin, beyaz kartlar, koyu lacivert rakamlar.
+ * Doygun yeşil/turuncu gradyanlar kaldırıldı; her işlem yalnızca küçük bir vurgu rengiyle ayrılır.
  */
 data class WorldPalette(
     val key: String,
@@ -22,132 +24,77 @@ data class WorldPalette(
     val muted: Color
 )
 
-/**
- * Çocuk dostu, doygun ama yumuşak palet sistemi (Bloop / Prodigy / Duolingo ABC hissi).
- * Kaynak dosyalara bağımlı değildir; tüm renkler kod içinde tanımlıdır.
- */
 object GameVisuals {
 
     /** Doğru eşleştirme / başarılı hamle yeşili. */
-    val ok: Color = Color(0xFF12B76A)
+    val ok: Color = Color(0xFF16A34A)
 
-    /** Yanlış hamle / süre bitti kırmızısı (çocuk için yumuşatılmış). */
-    val danger: Color = Color(0xFFF04438)
+    /** Yanlış hamle / süre bitti kırmızısı. */
+    val danger: Color = Color(0xFFDC2626)
 
-    /** Altın para ve ödül rengi. */
-    val gold: Color = Color(0xFFF5A524)
+    /** Altın / yıldız rengi. */
+    val gold: Color = Color(0xFFF59E0B)
 
-    /** Elmas / özel joker rengi. */
-    val gem: Color = Color(0xFF3ABFF8)
+    /** Elmas / özel ödül rengi. */
+    val gem: Color = Color(0xFF0EA5E9)
 
-    private val orman = WorldPalette(
-        key = "orman",
-        bgTop = Color(0xFF57D9A3),
-        bgBottom = Color(0xFF16A37A),
-        accent = Color(0xFFFF8A3D),
-        accentDeep = Color(0xFFE2650F),
-        tileFaceTop = Color(0xFFFFFDF3),
-        tileFaceBottom = Color(0xFFF0F7CF),
-        tileText = Color(0xFF103A22),
-        glow = Color(0xFFFFE45C),
-        surface = Color(0xFFFFFFFF),
-        onSurface = Color(0xFF12331F),
-        muted = Color(0xFF5C8A72)
-    )
+    /** Seçili taşın sıcak vurgusu (sarı → turuncu). */
+    val selectedStart: Color = Color(0xFFFFD65C)
+    val selectedEnd: Color = Color(0xFFFF9F43)
 
-    private val magara = WorldPalette(
-        key = "magara",
-        bgTop = Color(0xFFFFB459),
-        bgBottom = Color(0xFFE8623C),
-        accent = Color(0xFFE8452F),
-        accentDeep = Color(0xFFB32E1B),
-        tileFaceTop = Color(0xFFFFF6E3),
-        tileFaceBottom = Color(0xFFF7DFB4),
-        tileText = Color(0xFF43260E),
-        glow = Color(0xFFFFD166),
-        surface = Color(0xFFFFFBF2),
-        onSurface = Color(0xFF43260E),
-        muted = Color(0xFFA67F52)
-    )
-
-    private val kale = WorldPalette(
-        key = "kale",
-        bgTop = Color(0xFF8A7CF8),
-        bgBottom = Color(0xFF4B3BC4),
-        accent = Color(0xFFFFC93C),
-        accentDeep = Color(0xFFE0A400),
+    private fun palette(
+        key: String,
+        accent: Color,
+        accentDeep: Color,
+        glow: Color
+    ) = WorldPalette(
+        key = key,
+        bgTop = Color(0xFFFFFBF3),
+        bgBottom = Color(0xFFF1E6D2),
+        accent = accent,
+        accentDeep = accentDeep,
         tileFaceTop = Color(0xFFFFFFFF),
-        tileFaceBottom = Color(0xFFDEE9FF),
-        tileText = Color(0xFF14245E),
-        glow = Color(0xFFA5B4FC),
+        tileFaceBottom = Color(0xFFFFF8EA),
+        tileText = Color(0xFF221F35),
+        glow = glow,
         surface = Color(0xFFFFFFFF),
-        onSurface = Color(0xFF1B1140),
-        muted = Color(0xFF6F65A8)
+        onSurface = Color(0xFF26243A),
+        muted = Color(0xFF7A8091)
     )
 
-    private val uzay = WorldPalette(
-        key = "uzay",
-        bgTop = Color(0xFF0E3A4A),
-        bgBottom = Color(0xFF1B1454),
-        accent = Color(0xFF22D3EE),
-        accentDeep = Color(0xFF0E7490),
-        tileFaceTop = Color(0xFFF1FEFF),
-        tileFaceBottom = Color(0xFFB6F1FA),
-        tileText = Color(0xFF04333D),
-        glow = Color(0xFF67E8F9),
-        surface = Color(0xFFF3F0FF),
-        onSurface = Color(0xFF1B1454),
-        muted = Color(0xFF8B85C4)
-    )
-
-    private val ada = WorldPalette(
-        key = "ada",
-        bgTop = Color(0xFF4DE0E8),
-        bgBottom = Color(0xFF0FA3B1),
-        accent = Color(0xFFFF6F5E),
-        accentDeep = Color(0xFFD14334),
-        tileFaceTop = Color(0xFFFFFBEB),
-        tileFaceBottom = Color(0xFFFFE1A8),
-        tileText = Color(0xFF06403F),
-        glow = Color(0xFFFFD166),
-        surface = Color(0xFFFFFFFF),
-        onSurface = Color(0xFF06585C),
-        muted = Color(0xFF5E9AA0)
-    )
-
-    private val lab = WorldPalette(
-        key = "lab",
-        bgTop = Color(0xFF8FC8FF),
-        bgBottom = Color(0xFFE4F4FF),
-        accent = Color(0xFF2563EB),
-        accentDeep = Color(0xFF1B4FCC),
-        tileFaceTop = Color(0xFFFFFFFF),
-        tileFaceBottom = Color(0xFFE3F1FF),
-        tileText = Color(0xFF0B2545),
-        glow = Color(0xFF93C5FD),
-        surface = Color(0xFFFFFFFF),
-        onSurface = Color(0xFF0B2545),
-        muted = Color(0xFF648096)
-    )
+    private val toplama = palette("toplama", Color(0xFFFF8A3D), Color(0xFFE3691A), Color(0xFFFFC46B))
+    private val cikarma = palette("cikarma", Color(0xFF4C8DFF), Color(0xFF2563EB), Color(0xFF93C5FD))
+    private val carpma = palette("carpma", Color(0xFF9B6BFF), Color(0xFF7C3AED), Color(0xFFC4B5FD))
+    private val bolme = palette("bolme", Color(0xFF1FB6A6), Color(0xFF0E9384), Color(0xFF99F6E4))
+    private val notr = palette("notr", Color(0xFF64748B), Color(0xFF475569), Color(0xFFCBD5E1))
 
     private val byKey: Map<String, WorldPalette> = mapOf(
-        orman.key to orman,
-        magara.key to magara,
-        kale.key to kale,
-        uzay.key to uzay,
-        ada.key to ada,
-        lab.key to lab
+        toplama.key to toplama,
+        cikarma.key to cikarma,
+        carpma.key to carpma,
+        bolme.key to bolme,
+        notr.key to notr,
+        // Eski anahtarlar da aynı sade tasarıma düşer.
+        "orman" to toplama,
+        "magara" to cikarma,
+        "kale" to carpma,
+        "uzay" to bolme,
+        "ada" to bolme,
+        "lab" to notr
     )
 
-    /** worldKey: "orman" | "magara" | "kale" | "uzay" | "ada" | "lab"; bilinmeyen anahtar "orman"e düşer. */
     fun palette(worldKey: String): WorldPalette =
-        byKey[worldKey.lowercase().trim()] ?: orman
+        byKey[worldKey.lowercase().trim()] ?: toplama
 
-    /** Ekran arka planı için dikey dünya gradyanı. */
+    /** Ekran arka planı: sıcak krem, yumuşak dikey geçiş. */
     fun backgroundBrush(p: WorldPalette): Brush =
         Brush.verticalGradient(colors = listOf(p.bgTop, p.bgBottom))
 
-    /** Sayı bloklarının yüzeyi için dikey pastel gradyan. */
+    /** Sayı bloklarının yüzeyi. */
     fun tileBrush(p: WorldPalette): Brush =
         Brush.verticalGradient(colors = listOf(p.tileFaceTop, p.tileFaceBottom))
+
+    /** Seçili blok: sarıdan turuncuya ısınan yüzey. */
+    fun selectedBrush(): Brush =
+        Brush.verticalGradient(colors = listOf(selectedStart, selectedEnd))
 }

@@ -10,7 +10,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import com.sayiavcisi.app.audio.SoundEffectsManager
 import com.sayiavcisi.app.data.LocalProgressStorage
-import com.sayiavcisi.app.data.ParentStatsSnapshot
 import com.sayiavcisi.app.engine.CurriculumRepository
 import com.sayiavcisi.app.engine.GameSession
 import com.sayiavcisi.app.engine.ProgressRules
@@ -79,14 +78,11 @@ fun SayiAvcisiApp(storage: LocalProgressStorage) {
     when (val current = route) {
         Route.Start -> StartScreen(
             dailyScore = snapshot.dailyScore,
-            dailyCap = ParentStatsSnapshot.DAILY_CAP,
-            totalGold = snapshot.totalGoldCoins,
-            totalDiamonds = snapshot.totalDiamonds,
-            completedLevelIds = snapshot.completedLevelIds,
+            completedCount = ProgressRules.completedLevelCount(snapshot.completedLevelIds),
+            totalLevels = CurriculumRepository.allLevels.size,
             resumeLevelId = snapshot.lastActiveLevelId?.takeIf { id ->
                 storage.loadGameSnapshot(id) != null
             },
-            timedMode = !snapshot.relaxedUntimedMode,
             onPlay = {
                 refresh()
                 route = Route.Map
@@ -104,13 +100,6 @@ fun SayiAvcisiApp(storage: LocalProgressStorage) {
 
         Route.Map -> AdventureMapScreen(
             completedLevelIds = snapshot.completedLevelIds,
-            dailyScore = snapshot.dailyScore,
-            dailyCap = ParentStatsSnapshot.DAILY_CAP,
-            timedMode = !snapshot.relaxedUntimedMode,
-            onToggleTimedMode = { enabled ->
-                storage.setRelaxedUntimedMode(!enabled)
-                refresh()
-            },
             onLevelClick = { spec -> startLevel(spec.levelId, resume = true) },
             onBack = {
                 refresh()
