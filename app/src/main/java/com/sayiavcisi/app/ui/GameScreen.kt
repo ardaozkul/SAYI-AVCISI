@@ -79,7 +79,7 @@ fun GameScreen(
         if (session.correctTick > 0) {
             SoundEffectsManager.playCorrectSound()
             flashRight = session.lastMatchedCoords.toSet()
-            delay(420)
+            delay(700)
             flashRight = emptySet()
         }
     }
@@ -87,7 +87,7 @@ fun GameScreen(
         if (session.wrongTick > 0) {
             SoundEffectsManager.playGentleWrongSound()
             flashWrong = session.lastWrongCoords.toSet()
-            delay(520)
+            delay(900)
             flashWrong = emptySet()
         }
     }
