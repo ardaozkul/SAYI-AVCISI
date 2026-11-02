@@ -69,7 +69,7 @@ fun NumberTile(
 
     val base = modifier
         .then(if (animateAppear) Modifier.popIn(delayMillis = appearDelayMillis) else Modifier)
-        .scale(if (isSelected && active) 1.045f else 1f)
+        .scale(if (isSelected && active) 1.09f else 1f)
         .then(
             when {
                 face != null -> Modifier
@@ -77,7 +77,7 @@ fun NumberTile(
                     .background(face, shape)
 
                 active -> Modifier
-                    .shadow(3.dp, shape)
+                    .shadow(if (isSelected) 7.dp else 3.dp, shape)
                     .background(
                         brush = if (isSelected) {
                             GameVisuals.selectedBrush()
@@ -117,6 +117,26 @@ fun NumberTile(
         }
 
     Box(modifier = base, contentAlignment = Alignment.Center) {
+        if (active) {
+            // Cam parlaklığı: üst kenarda ince bir ışık çizgisi.
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .padding(2.dp)
+                    .border(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = if (isSelected) 0.32f else 0.55f),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+            )
+        }
+        if (isSelected && active) {
+            GlowRing(
+                active = true,
+                color = GameVisuals.gold.copy(alpha = 0.85f),
+                modifier = Modifier.matchParentSize()
+            )
+        }
         if (showNumber) {
             Text(
                 text = cell.value.toString(),

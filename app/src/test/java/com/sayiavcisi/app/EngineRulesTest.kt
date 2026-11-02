@@ -3,6 +3,7 @@ package com.sayiavcisi.app
 import com.sayiavcisi.app.engine.BoardBuilder
 import com.sayiavcisi.app.engine.BoardDoctor
 import com.sayiavcisi.app.engine.CurriculumRepository
+import com.sayiavcisi.app.engine.EndlessMissionFactory
 import com.sayiavcisi.app.engine.GameSession
 import com.sayiavcisi.app.engine.ProgressRules
 import com.sayiavcisi.app.engine.RuleEngine
@@ -271,9 +272,10 @@ class EngineRulesTest {
 
     @Test
     fun kombolarSinirlandirilmadikKadarBuyur() {
-        // Toplamada 8 taşa kadar kombolar geçerli; 9 taş pratik tavanı aşar.
+        // Toplamada kombo taş sayısında yapay bir tavan yok: 8, 9 ve 30 taş da geçerli.
         assertTrue(RuleEngine.mathMatches(List(8) { 1 }, RuleKind.SUM, 8))
-        assertFalse(RuleEngine.mathMatches(List(9) { 1 }, RuleKind.SUM, 9))
+        assertTrue(RuleEngine.mathMatches(List(9) { 1 }, RuleKind.SUM, 9))
+        assertTrue(RuleEngine.mathMatches(List(RuleEngine.MAX_COMPOSE) { 1 }, RuleKind.SUM, RuleEngine.MAX_COMPOSE))
         // Çıkarma zinciri: 12 - 3 - 2 - 2 = 5.
         assertTrue(RuleEngine.mathMatches(listOf(12, 3, 2, 2), RuleKind.DIFF, 5))
         assertFalse(RuleEngine.mathMatches(listOf(12, 3, 2, 2), RuleKind.DIFF, 4))
@@ -295,6 +297,7 @@ class EngineRulesTest {
         assertEquals(18, ScoreEngine.comboBonus(5))
         assertEquals(24, ScoreEngine.comboBonus(6))
         assertEquals(36, ScoreEngine.comboBonus(8))
+        assertEquals(42, ScoreEngine.comboBonus(9))
         assertEquals(0, ScoreEngine.comboBonus(2))
     }
 
@@ -604,18 +607,19 @@ class EngineRulesTest {
         val sums = CurriculumRepository.levelsForDay(1)
         assertEquals(30, sums.size)
         assertEquals((1..30).toList(), sums.map { it.target })
-        assertEquals(6, sums.first().cols)
-        assertTrue("1–30 toplamada her tahta en az 6×50 olmalı", sums.all { it.rows >= 50 })
-        assertEquals(50, sums.first().rows)
-        assertEquals(50, sums[2].rows)
-        assertEquals(50, sums[3].rows)
-        assertEquals(50, sums.last().rows)
-        assertEquals(300, sums.last().totalCells)
+        assertEquals(8, sums.first().cols)
+        assertTrue("1–30 toplamada her tahta en az 8×60 olmalı", sums.all { it.rows >= 60 })
+        assertEquals(60, sums.first().rows)
+        assertEquals(60, sums[2].rows)
+        assertEquals(60, sums[3].rows)
+        assertEquals(60, sums.last().rows)
+        assertEquals(480, sums.last().totalCells)
         assertEquals(listOf(2), sums.first().groupSizes)
         assertEquals(listOf(2, 3), CurriculumRepository.levelById("A7")!!.groupSizes)
         assertEquals(listOf(2, 3, 4), CurriculumRepository.levelById("A10")!!.groupSizes)
         assertTrue(CurriculumRepository.endlessLevel.endless)
-        assertEquals(100, CurriculumRepository.endlessLevel.rows)
+        assertEquals(120, CurriculumRepository.endlessLevel.rows)
+        assertEquals(8, CurriculumRepository.endlessLevel.cols)
     }
 
     @Test
@@ -690,10 +694,10 @@ class EngineRulesTest {
 
     @Test
     fun sonsuzAvGoreviAnindaOynanirVeYenilenir() {
-        val spec = CurriculumRepository.endlessLevel.copy(cols = 6)
+        val spec = CurriculumRepository.endlessLevel
         val s = GameSession(spec, FakeBridge(), 77)
-        assertEquals(600, s.board.cells.size)
-        assertEquals(600, s.board.activeCells().size)
+        assertEquals(960, s.board.cells.size)
+        assertEquals(960, s.board.activeCells().size)
         assertTrue(s.board.cells.all { it.value in 1..100 })
 
         val mission = s.mission
@@ -705,7 +709,7 @@ class EngineRulesTest {
         }
         assertEquals(expectedSize, mission.groupSize)
         assertEquals(expectedSize, s.missionCoords.size)
-        assertTrue("Görev üst satırlarda olmalı", s.missionCoords.all { it.first < 10 })
+        assertTrue("Görev üst satırlarda olmalı", s.missionCoords.all { it.first < 12 })
         val values = s.missionCoords.map { s.board.cellAt(it)!!.value }
         assertTrue(RuleEngine.mathMatches(values, mission.kind, mission.target))
 
@@ -713,11 +717,11 @@ class EngineRulesTest {
         assertTrue(result.accepted)
         assertEquals(1, s.missionsSolved)
         assertTrue(s.endlessScore > 0)
-        assertEquals(600, s.board.activeCells().size)
-        assertEquals(600, s.board.cells.size)
+        assertEquals(960, s.board.activeCells().size)
+        assertEquals(960, s.board.cells.size)
         assertTrue(s.board.cells.all { !it.isCleared && it.value in 1..100 })
         assertTrue(s.mission!!.kind != mission.kind)
-        assertTrue("Yeni görev de üst satırlarda olmalı", s.missionCoords.all { it.first < 10 })
+        assertTrue("Yeni görev de üst satırlarda olmalı", s.missionCoords.all { it.first < 12 })
 
         s.finishEndless()
         val record = fakeBridgeOf(s).endlessRecords.single()
@@ -739,6 +743,57 @@ class EngineRulesTest {
         }
         assertEquals(14, CurriculumRepository.withColumns(CurriculumRepository.levelById("S4")!!, 15).cols)
         assertEquals(15, CurriculumRepository.withColumns(CurriculumRepository.levelById("A7")!!, 15).cols)
+    }
+
+    // ---- SINIRSIZ KOMBO + DENGELİ İŞLEM ------------------------------------------------
+
+    @Test
+    fun komboCarpaniHerUcDogrudaKatlanirVeSinirsizdir() {
+        assertEquals(1, ScoreEngine.comboMultiplier(1))
+        assertEquals(1, ScoreEngine.comboMultiplier(2))
+        assertEquals(2, ScoreEngine.comboMultiplier(3))
+        assertEquals(2, ScoreEngine.comboMultiplier(5))
+        assertEquals(4, ScoreEngine.comboMultiplier(6))
+        assertEquals(8, ScoreEngine.comboMultiplier(9))
+        assertEquals(16, ScoreEngine.comboMultiplier(12))
+        assertTrue(
+            "Seri büyüdükçe çarpan katlanmaya devam etmeli",
+            ScoreEngine.comboMultiplier(60) > ScoreEngine.comboMultiplier(30)
+        )
+    }
+
+    @Test
+    fun ardisikDogrularPuanCarpaniniBuyutur() {
+        val spec = CurriculumRepository.levelById("A7")!!
+        val first = ScoreEngine.matchPoints(spec, 2, 1, false)
+        val fourth = ScoreEngine.matchPoints(spec, 2, 4, false)
+        val seventh = ScoreEngine.matchPoints(spec, 2, 7, false)
+        assertTrue("4. doğru daha çok puan etmeli", fourth > first)
+        assertTrue("7. doğru daha da çok puan etmeli", seventh > fourth)
+    }
+
+    @Test
+    fun sonsuzAvdaArdisikDogrularKomboDurumunuBuyutur() {
+        val s = GameSession(CurriculumRepository.endlessLevel, FakeBridge(), 91)
+        play(s, s.missionCoords)
+        assertEquals(1, s.comboStreak)
+        assertEquals(1, s.comboMultiplier)
+        play(s, s.missionCoords)
+        assertEquals(2, s.comboStreak)
+        assertTrue("İkinci doğruda zincir kombosu görünmeli", s.comboKinds.isNotEmpty())
+        play(s, s.missionCoords)
+        assertEquals(3, s.comboStreak)
+        assertEquals(2, s.comboMultiplier)
+        assertTrue(s.comboTitle.isNotBlank())
+    }
+
+    @Test
+    fun dengeliTorbaHerTurdaDortIslemiBirerKezDagitir() {
+        val bag = EndlessMissionFactory.MissionBag(Random(7))
+        val draws = (1..12).map { bag.draw() }
+        for (kind in RuleKind.values()) {
+            assertEquals("$kind 12 görevde tam 3 kez olmalı", 3, draws.count { it == kind })
+        }
     }
 
     // ---- yardımcılar -------------------------------------------------------------------

@@ -1,43 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.sayiavcisi.app.EngineRulesTest" tests="37" skipped="0" failures="0" errors="0" timestamp="2026-11-02T19:57:35.221Z" hostname="ARDA" time="14.231">
+<testsuite name="com.sayiavcisi.app.EngineRulesTest" tests="41" skipped="0" failures="0" errors="0" timestamp="2026-11-02T21:40:08.962Z" hostname="ARDA" time="18.777">
   <properties/>
-  <testcase name="hedefinTumKombinasyonlariDestedeVar" classname="com.sayiavcisi.app.EngineRulesTest" time="0.057"/>
-  <testcase name="kombolarSinirlandirilmadikKadarBuyur" classname="com.sayiavcisi.app.EngineRulesTest" time="0.005"/>
-  <testcase name="aralarindaBlokKalmayanUzakTaslarKomsudur" classname="com.sayiavcisi.app.EngineRulesTest" time="0.011"/>
-  <testcase name="planSirasiTakipEdilinceTahtaTamamenTemizlenir" classname="com.sayiavcisi.app.EngineRulesTest" time="1.652"/>
-  <testcase name="yanlisHamlePuanDusurur" classname="com.sayiavcisi.app.EngineRulesTest" time="1.398"/>
-  <testcase name="toplamadaButunKombinasyonlarKabulEdilir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.001"/>
-  <testcase name="duzSonraCaprazaDonusGecerli" classname="com.sayiavcisi.app.EngineRulesTest" time="0.002"/>
-  <testcase name="tahtayaKombinasyonlarEsitDagitilir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.013"/>
+  <testcase name="hedefinTumKombinasyonlariDestedeVar" classname="com.sayiavcisi.app.EngineRulesTest" time="0.04"/>
+  <testcase name="kombolarSinirlandirilmadikKadarBuyur" classname="com.sayiavcisi.app.EngineRulesTest" time="0.004"/>
+  <testcase name="aralarindaBlokKalmayanUzakTaslarKomsudur" classname="com.sayiavcisi.app.EngineRulesTest" time="0.004"/>
+  <testcase name="planSirasiTakipEdilinceTahtaTamamenTemizlenir" classname="com.sayiavcisi.app.EngineRulesTest" time="1.784"/>
+  <testcase name="yanlisHamlePuanDusurur" classname="com.sayiavcisi.app.EngineRulesTest" time="1.441"/>
+  <testcase name="toplamadaButunKombinasyonlarKabulEdilir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.0"/>
+  <testcase name="duzSonraCaprazaDonusGecerli" classname="com.sayiavcisi.app.EngineRulesTest" time="0.001"/>
+  <testcase name="komboCarpaniHerUcDogrudaKatlanirVeSinirsizdir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.0"/>
+  <testcase name="tahtayaKombinasyonlarEsitDagitilir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.01"/>
   <testcase name="komsuOlmayanVeAyniHattaOlmayanSecimReddedilir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.001"/>
-  <testcase name="rastgeleTohumlardaTahtaTamamenDolu" classname="com.sayiavcisi.app.EngineRulesTest" time="5.405"/>
+  <testcase name="rastgeleTohumlardaTahtaTamamenDolu" classname="com.sayiavcisi.app.EngineRulesTest" time="7.599"/>
   <testcase name="buyuyenKombonunBonusuArtar" classname="com.sayiavcisi.app.EngineRulesTest" time="0.0"/>
   <testcase name="dortBolumVeArdisikToplamaHedefleri" classname="com.sayiavcisi.app.EngineRulesTest" time="0.001"/>
   <testcase name="tersSiradaBolmePuanGötürmezVeKisaUyariVerir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.001"/>
-  <testcase name="sonsuzAvGoreviAnindaOynanirVeYenilenir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.009"/>
-  <testcase name="jokerHakkiVePuaniCalisir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.392"/>
-  <testcase name="cikarmaCarpimTablosuVeBolmeBolumleriVar" classname="com.sayiavcisi.app.EngineRulesTest" time="0.003"/>
-  <testcase name="ustBaslikVeHedefMetniCocukDiliyle" classname="com.sayiavcisi.app.EngineRulesTest" time="0.003"/>
-  <testcase name="parmakSurukleyinceDugmesizKontrolEdilir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.297"/>
-  <testcase name="bolmedeOnceBolunenSonraBolenZorunlu" classname="com.sayiavcisi.app.EngineRulesTest" time="0.001"/>
+  <testcase name="sonsuzAvGoreviAnindaOynanirVeYenilenir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.008"/>
+  <testcase name="jokerHakkiVePuaniCalisir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.717"/>
+  <testcase name="cikarmaCarpimTablosuVeBolmeBolumleriVar" classname="com.sayiavcisi.app.EngineRulesTest" time="0.002"/>
+  <testcase name="ustBaslikVeHedefMetniCocukDiliyle" classname="com.sayiavcisi.app.EngineRulesTest" time="0.002"/>
+  <testcase name="sonsuzAvdaArdisikDogrularKomboDurumunuBuyutur" classname="com.sayiavcisi.app.EngineRulesTest" time="0.005"/>
+  <testcase name="parmakSurukleyinceDugmesizKontrolEdilir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.599"/>
+  <testcase name="dengeliTorbaHerTurdaDortIslemiBirerKezDagitir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.001"/>
+  <testcase name="bolmedeOnceBolunenSonraBolenZorunlu" classname="com.sayiavcisi.app.EngineRulesTest" time="0.0"/>
   <testcase name="ucSayiliCikarmaVeCarpmaKurallari" classname="com.sayiavcisi.app.EngineRulesTest" time="0.0"/>
-  <testcase name="rastgeleOynandigindaAslaTikanilmaz" classname="com.sayiavcisi.app.EngineRulesTest" time="4.074"/>
-  <testcase name="tabletSutunlariTahtayiTamamenKapatir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.005"/>
-  <testcase name="hamleKalmayanTahtaYildizDestegiyleCozulur" classname="com.sayiavcisi.app.EngineRulesTest" time="0.004"/>
+  <testcase name="ardisikDogrularPuanCarpaniniBuyutur" classname="com.sayiavcisi.app.EngineRulesTest" time="0.0"/>
+  <testcase name="rastgeleOynandigindaAslaTikanilmaz" classname="com.sayiavcisi.app.EngineRulesTest" time="5.388"/>
+  <testcase name="tabletSutunlariTahtayiTamamenKapatir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.004"/>
+  <testcase name="hamleKalmayanTahtaYildizDestegiyleCozulur" classname="com.sayiavcisi.app.EngineRulesTest" time="0.002"/>
   <testcase name="cikarmadaOnceBuyukSonraKucukZorunlu" classname="com.sayiavcisi.app.EngineRulesTest" time="0.0"/>
-  <testcase name="besTasliKomboTahtadaKabulEdilir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.002"/>
-  <testcase name="caprazVeTersYonlerGecerli" classname="com.sayiavcisi.app.EngineRulesTest" time="0.001"/>
-  <testcase name="sifirIcerikliIlkToplamalardaSifirDegerUretilebilir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.001"/>
-  <testcase name="sonsuzAvKomsulukAramazVeGorevlerAcikFormuldur" classname="com.sayiavcisi.app.EngineRulesTest" time="0.019"/>
-  <testcase name="kayitVeGeriYukleme" classname="com.sayiavcisi.app.EngineRulesTest" time="0.017"/>
-  <testcase name="gunlukTavanBolumPuaniniKesmez" classname="com.sayiavcisi.app.EngineRulesTest" time="0.377"/>
-  <testcase name="dortBlokluGrupYalnizcaToplamada" classname="com.sayiavcisi.app.EngineRulesTest" time="0.0"/>
-  <testcase name="karisikYonluKomsuSecimKomboYapar" classname="com.sayiavcisi.app.EngineRulesTest" time="0.002"/>
+  <testcase name="besTasliKomboTahtadaKabulEdilir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.001"/>
+  <testcase name="caprazVeTersYonlerGecerli" classname="com.sayiavcisi.app.EngineRulesTest" time="0.0"/>
+  <testcase name="sifirIcerikliIlkToplamalardaSifirDegerUretilebilir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.0"/>
+  <testcase name="sonsuzAvKomsulukAramazVeGorevlerAcikFormuldur" classname="com.sayiavcisi.app.EngineRulesTest" time="0.01"/>
+  <testcase name="kayitVeGeriYukleme" classname="com.sayiavcisi.app.EngineRulesTest" time="0.006"/>
+  <testcase name="gunlukTavanBolumPuaniniKesmez" classname="com.sayiavcisi.app.EngineRulesTest" time="0.572"/>
+  <testcase name="dortBlokluGrupYalnizcaToplamada" classname="com.sayiavcisi.app.EngineRulesTest" time="0.001"/>
+  <testcase name="karisikYonluKomsuSecimKomboYapar" classname="com.sayiavcisi.app.EngineRulesTest" time="0.0"/>
   <testcase name="ucVeDortTasliKombodaBuyukBonusVeKutlama" classname="com.sayiavcisi.app.EngineRulesTest" time="0.001"/>
-  <testcase name="tersSiradaCikarmaPuanGötürmezVeKisaUyariVerir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.0"/>
-  <testcase name="cikarmaCarpmaBolmeSiraBagimsiz" classname="com.sayiavcisi.app.EngineRulesTest" time="0.001"/>
-  <testcase name="butunBolumlerdeIkiliKombinasyonlarEsitSayida" classname="com.sayiavcisi.app.EngineRulesTest" time="0.098"/>
-  <testcase name="herBolumTahtasiTamamenKapanirVeHerGrupTekHedefiSaglar" classname="com.sayiavcisi.app.EngineRulesTest" time="0.37"/>
+  <testcase name="tersSiradaCikarmaPuanGötürmezVeKisaUyariVerir" classname="com.sayiavcisi.app.EngineRulesTest" time="0.001"/>
+  <testcase name="cikarmaCarpmaBolmeSiraBagimsiz" classname="com.sayiavcisi.app.EngineRulesTest" time="0.0"/>
+  <testcase name="butunBolumlerdeIkiliKombinasyonlarEsitSayida" classname="com.sayiavcisi.app.EngineRulesTest" time="0.122"/>
+  <testcase name="herBolumTahtasiTamamenKapanirVeHerGrupTekHedefiSaglar" classname="com.sayiavcisi.app.EngineRulesTest" time="0.445"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>

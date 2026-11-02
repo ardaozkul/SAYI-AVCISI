@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.sayiavcisi.app.model.BlockCell
 import com.sayiavcisi.app.model.Board
+import com.sayiavcisi.app.model.ComboKind
 import com.sayiavcisi.app.model.EndlessMission
 import com.sayiavcisi.app.model.JokerType
 import com.sayiavcisi.app.model.LevelSpec
@@ -57,9 +58,12 @@ class GameSession(
     private val rng = Random(seed)
     val isEndless: Boolean get() = spec.endless
 
+    /** Dengeli torba: her dört görevde dört işlem birer kez. */
+    private var missionBag = EndlessMissionFactory.MissionBag(rng)
+
     /** Sonsuz Av'ın o anki görevi; normal bölümlerde null. */
     var mission: EndlessMission? by mutableStateOf(
-        if (spec.endless) EndlessMissionFactory.first(rng) else null
+        if (spec.endless) EndlessMissionFactory.next(missionBag, rng) else null
     )
         private set
 
@@ -183,6 +187,22 @@ class GameSession(
     var comboTick by mutableIntStateOf(0)
         private set
 
+    /** Ekranda gösterilen ardışık doğru serisi ve katlanan çarpanı. */
+    var comboStreak by mutableIntStateOf(0)
+        private set
+
+    var comboMultiplier by mutableIntStateOf(1)
+        private set
+
+    var comboTitle by mutableStateOf("")
+        private set
+
+    var comboKinds by mutableStateOf(emptyList<ComboKind>())
+        private set
+
+    private var lastCorrectAt: Long = 0L
+    private var lastCorrectKind: RuleKind? = null
+
     var isRescueUsed by mutableStateOf(false)
         private set
 
@@ -240,16 +260,16 @@ class GameSession(
 
     /**
      * Yeni görevin örnek sayılarını tahtadaki rastgele bir yatay hatta yerleştirir.
-     * Böylece 6×100 tahtada görev anında oynanabilir olur.
+     * Böylece 8×120 tahtada görev anında oynanabilir olur.
      */
     private fun seedMissionOnBoard() {
         val m = mission ?: return
         val size = (m.groupSize).coerceIn(2, minOf(4, board.cols))
         val operands = m.seedOperands.take(size)
         if (operands.size != size) return
-        // Görev, çocuğun ilk bakışta görebileceği üst satırlara yerleştirilir. 6×100 tahtada
-        // rastgele bir satıra koymak görevi ekran dışına atıyordu; ipucu da artık oraya kaydırır.
-        val row = rng.nextInt(0, minOf(10, board.rows).coerceAtLeast(1))
+        // Görev, çocuğun ilk bakışta görebileceği üst satırlara yerleştirilir. 8×120 tahtada
+        // rastgele bir satıra koymak görevi ekran dışına atıyordu; ipucu de oraya kaydırır.
+        val row = rng.nextInt(0, minOf(12, board.rows).coerceAtLeast(1))
         val maxStart = (board.cols - size).coerceAtLeast(0)
         val startCol = if (maxStart > 0) rng.nextInt(0, maxStart + 1) else 0
         val coords = (0 until size).map { row to (startCol + it) }
@@ -414,6 +434,61 @@ class GameSession(
 
     // ---- Hamle -------------------------------------------------------------------------
 
+    /**
+     * Bu doğru hamlede tetiklenen kombo türlerini toplar. Aynı hamlede birden fazla
+     * tür yanabilir; ekran hepsini ayrı çip olarak gösterir.
+     */
+    private fun detectCombos(
+        values: List<Int>,
+        newStreak: Int,
+        kind: RuleKind,
+        sinceLastCorrectMs: Long
+    ): List<ComboKind> {
+        val kinds = mutableListOf<ComboKind>()
+        if (newStreak >= 2) kinds += ComboKind.CHAIN
+        if (lastCorrectAt > 0 && sinceLastCorrectMs in 1..3_500) kinds += ComboKind.SPEED
+        when (values.size) {
+            3 -> kinds += ComboKind.TRIPLE
+            4 -> kinds += ComboKind.QUAD
+        }
+        if (mistakes == 0 && newStreak >= 5) kinds += ComboKind.PERFECT
+        if (lastCorrectKind != null && lastCorrectKind != kind) kinds += ComboKind.MIXED
+        return kinds
+    }
+
+    /** Kombo durumunu tek yerden günceller; normal ve Sonsuz Av aynı kuralları kullanır. */
+    private fun prepareCombo(
+        values: List<Int>,
+        kind: RuleKind,
+        newStreak: Int
+    ): ComboSnapshot {
+        val now = System.currentTimeMillis()
+        val sinceLast = if (lastCorrectAt > 0L) now - lastCorrectAt else Long.MAX_VALUE
+        val kinds = detectCombos(values, newStreak, kind, sinceLast)
+        return ComboSnapshot(
+            streak = newStreak,
+            multiplier = ScoreEngine.comboMultiplier(newStreak),
+            title = ScoreEngine.comboTitle(newStreak),
+            kinds = kinds
+        )
+    }
+
+    private fun applyCombo(combo: ComboSnapshot) {
+        comboStreak = combo.streak
+        comboMultiplier = combo.multiplier
+        comboTitle = combo.title
+        comboKinds = combo.kinds
+        lastCorrectAt = System.currentTimeMillis()
+        lastCorrectKind = activeKind
+    }
+
+    private data class ComboSnapshot(
+        val streak: Int,
+        val multiplier: Int,
+        val title: String,
+        val kinds: List<ComboKind>
+    )
+
     fun submit(): MatchResult {
         if (selected.size < 2) {
             message = "En az iki taş seç."
@@ -449,7 +524,8 @@ class GameSession(
         if (spec.endless) return acceptEndless(values, prompt)
 
         val expression = RuleEngine.expressionOf(values, spec.ruleKind)
-        val raw = ScoreEngine.matchPoints(spec, values.size, streak + 1, doubleNextActive)
+        val combo = prepareCombo(values, spec.ruleKind, streak + 1)
+        val raw = ScoreEngine.matchPoints(spec, values.size, combo.streak, doubleNextActive)
         val bonus = ScoreEngine.comboBonus(values.size)
         val room = (ScoreEngine.DAILY_CAP - bridge.grossEarnedToday()).coerceAtLeast(0)
         val dailyGrant = raw.coerceAtMost(room)
@@ -472,24 +548,47 @@ class GameSession(
         comboSize = values.size
         comboBonus = bonus
         comboPoints = raw
-        if (values.size >= 3) comboTick += 1
+        applyCombo(combo)
+        if (combo.kinds.isNotEmpty() || values.size >= 3) comboTick += 1
         bridge.addGrossEarned(dailyGrant)
         bridge.recordAttempt(spec.operation, true, values, prompt, elapsedMs())
         lastAttemptStartedAt = System.currentTimeMillis()
-        message = if (bonus > 0) {
-            "$expression • ${values.size}'lü kombo!  +$raw puan"
-        } else {
-            "$expression • +$raw puan"
+        message = buildString {
+            append(expression)
+            if (combo.multiplier > 1) append(" • ${combo.title} ×${combo.multiplier}")
+            if (bonus > 0) append(" • ${values.size}'lü kombo!")
+            append("  +$raw puan")
         }
 
         if (board.isCleared()) {
             finishLevel()
-            lastResult = MatchResult(true, expression, message, raw, comboSize = values.size)
+            lastResult = MatchResult(
+                accepted = true,
+                expression = expression,
+                message = message,
+                pointsDelta = raw,
+                comboSize = values.size,
+                comboKinds = combo.kinds,
+                comboStreak = combo.streak,
+                comboMultiplier = combo.multiplier,
+                comboTitle = combo.title
+            )
         } else {
             bridge.saveSnapshot(encodeSnapshot())
             val rescued = BoardDoctor.hint(board, spec) == null
             if (rescued) starRescue()
-            lastResult = MatchResult(true, expression, message, raw, usedRescue = rescued, comboSize = values.size)
+            lastResult = MatchResult(
+                accepted = true,
+                expression = expression,
+                message = message,
+                pointsDelta = raw,
+                usedRescue = rescued,
+                comboSize = values.size,
+                comboKinds = combo.kinds,
+                comboStreak = combo.streak,
+                comboMultiplier = combo.multiplier,
+                comboTitle = combo.title
+            )
         }
         return lastResult!!
     }
@@ -501,7 +600,8 @@ class GameSession(
     private fun acceptEndless(values: List<Int>, prompt: String): MatchResult {
         val kind = activeKind
         val expression = RuleEngine.expressionOf(values, kind)
-        val base = ScoreEngine.endlessMissionPoints(kind, values.size, streak + 1)
+        val combo = prepareCombo(values, kind, streak + 1)
+        val base = ScoreEngine.endlessMissionPoints(kind, values.size, combo.streak)
         val points = if (doubleNextActive) base * 2 else base
         val cleared = selected.toSet()
         lastMatchedCoords = selected.toList()
@@ -526,18 +626,27 @@ class GameSession(
         comboSize = values.size
         comboBonus = 0
         comboPoints = points
-        if (values.size >= 3) comboTick += 1
+        applyCombo(combo)
+        if (combo.kinds.isNotEmpty() || values.size >= 3) comboTick += 1
         bridge.recordAttempt(kind.operation, true, values, prompt, elapsedMs())
         lastAttemptStartedAt = System.currentTimeMillis()
-        mission = EndlessMissionFactory.next(mission, rng)
+        mission = EndlessMissionFactory.next(missionBag, rng)
         seedMissionOnBoard()
-        message = "GÖREV TAMAM · $expression · +$points yeşil puan"
+        message = buildString {
+            append("GÖREV TAMAM · $expression")
+            if (combo.multiplier > 1) append(" · ${combo.title} ×${combo.multiplier}")
+            append(" · +$points yeşil puan")
+        }
         lastResult = MatchResult(
             accepted = true,
             expression = expression,
             message = message,
             pointsDelta = points,
-            comboSize = values.size
+            comboSize = values.size,
+            comboKinds = combo.kinds,
+            comboStreak = combo.streak,
+            comboMultiplier = combo.multiplier,
+            comboTitle = combo.title
         )
         return lastResult!!
     }
@@ -559,6 +668,10 @@ class GameSession(
     private fun reject(reason: String, values: List<Int>, prompt: String): MatchResult {
         mistakes += 1
         streak = 0
+        comboStreak = 0
+        comboMultiplier = 1
+        comboTitle = ""
+        comboKinds = emptyList()
         wrongTick += 1
         lastWrongCoords = selected.toList()
         val before = levelScore
@@ -752,7 +865,7 @@ class GameSession(
             rows = cols
             modeIndex = 3
         }
-        if (rows < 2 || cols < 2 || rows > 100 || cols > 20) return false
+        if (rows < 2 || cols < 2 || rows > 120 || cols > 24) return false
         // Tablet sütun ayarı değişince eski tahta boyutuyla kayıt geri yüklenemez.
         if (rows != spec.rows || cols != spec.cols) return false
         val mode = MatchRuleMode.values().firstOrNull { it.name == parts[modeIndex] } ?: return false
@@ -786,6 +899,10 @@ class GameSession(
         movesMade = parts[movesIndex].toIntOrNull() ?: 0
         levelScore = stats[0]
         streak = stats[1].coerceAtLeast(0)
+        comboStreak = streak
+        comboMultiplier = ScoreEngine.comboMultiplier(streak)
+        comboTitle = ScoreEngine.comboTitle(streak)
+        comboKinds = emptyList()
         mistakes = stats[2].coerceAtLeast(0)
         correctCount = stats[3].coerceAtLeast(0)
         secondsLeft = stats[4].takeIf { it >= 0 }
@@ -802,7 +919,8 @@ class GameSession(
     /** Bölümü baştan başlatır (süre dolduğunda veya çocuk istediğinde). */
     fun restart(newSeed: Int = Random.nextInt(1, Int.MAX_VALUE)) {
         if (spec.endless) {
-            mission = EndlessMissionFactory.first(rng)
+            missionBag = EndlessMissionFactory.MissionBag(rng)
+            mission = EndlessMissionFactory.next(missionBag, rng)
             board = BoardBuilder.buildEndless(spec, rng)
             seedMissionOnBoard()
         } else {
@@ -826,6 +944,12 @@ class GameSession(
         comboSize = 0
         comboBonus = 0
         comboPoints = 0
+        comboStreak = 0
+        comboMultiplier = 1
+        comboTitle = ""
+        comboKinds = emptyList()
+        lastCorrectAt = 0L
+        lastCorrectKind = null
         isFinished = false
         isTimeUp = false
         isRescueUsed = false

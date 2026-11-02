@@ -43,14 +43,14 @@ fun SayiAvcisiApp(storage: LocalProgressStorage) {
         snapshot = storage.loadSnapshot()
     }
 
-    /** Otomatik modda 10–11" tableti yatay, geniş tahtaya çevirir. */
+    /** Otomatik modda tableti yatay, geniş tahtaya çevirir. Telefon 8 sütundan başlar. */
     fun effectiveColumns(preferred: Int): Int {
         if (preferred > 0) return preferred
         return when {
-            screenWidthDp >= 1000 -> 15
-            screenWidthDp >= 840 -> 12
-            screenWidthDp >= 700 -> 9
-            else -> 6
+            screenWidthDp >= 1000 -> 20
+            screenWidthDp >= 840 -> 16
+            screenWidthDp >= 700 -> 12
+            else -> 8
         }
     }
 

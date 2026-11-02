@@ -22,8 +22,11 @@ import kotlin.random.Random
  */
 object RuleEngine {
 
-    /** Bir komboda seçilebilecek en fazla taş: oyun "istediğin kadarını bul" der, bu pratik tavan. */
-    const val MAX_COMPOSE = 8
+    /**
+     * Bir komboda seçilebilecek en fazla taş. Kombo zinciri gibi bu da sınırsızdır:
+     * toplamanın en büyük hedefi 30 olduğu için 30 taşlık seçim bile geçerlidir.
+     */
+    const val MAX_COMPOSE = 30
 
     /** Seçilen bloklar aynı satır/sütun/45° çapraz üzerinde mi? */
     fun areCollinear(coords: List<Pair<Int, Int>>): Boolean {

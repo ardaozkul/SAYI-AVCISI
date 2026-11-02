@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -367,6 +368,73 @@ fun ConfettiRain(active: Boolean, modifier: Modifier = Modifier) {
                     drawCircle(color = paint, radius = half, center = Offset(x, y))
                 }
             }
+        }
+    }
+}
+
+/**
+ * Yaşayan arka plan: dünyanın vurgu renginden süzülen, çok yavaş sürüklenen ışık
+ * kütleleri ve ince kâğıt benekleri. Ekranı boğmaz; yalnızca tahtanın arkasında
+ * nefes alan bir derinlik kurar. `Modifier.fillMaxSize()` ile en altta kullanılır.
+ */
+@Composable
+fun AmbientBackdrop(
+    palette: WorldPalette,
+    modifier: Modifier = Modifier
+) {
+    val transition = rememberInfiniteTransition(label = "ambient")
+    val drift by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 14_000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ambient_drift"
+    )
+    val breathe by transition.animateFloat(
+        initialValue = 0.65f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 5_200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "ambient_breathe"
+    )
+
+    // Sabit mikro benekler: kâğıt dokusu hissi, animasyonsuz.
+    val seeds = remember { List(18) { Random.nextFloat() to Random.nextFloat() } }
+
+    Canvas(modifier = modifier) {
+        val angle = drift * 2f * PI.toFloat()
+        val orbs = listOf(
+            Triple(0.16f + sin(angle) * 0.05f, 0.20f + cos(angle * 0.8f) * 0.04f, 0.46f),
+            Triple(0.84f + cos(angle * 0.7f) * 0.04f, 0.34f + sin(angle * 1.1f) * 0.05f, 0.52f),
+            Triple(0.52f + sin(angle * 0.5f) * 0.06f, 0.86f + cos(angle * 0.6f) * 0.03f, 0.40f)
+        )
+        for ((x, y, radiusFraction) in orbs) {
+            val centerPoint = Offset(size.width * x, size.height * y)
+            val radius = min(size.width, size.height) * radiusFraction
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        palette.glow.copy(alpha = 0.20f * breathe),
+                        palette.accent.copy(alpha = 0.05f * breathe),
+                        Color.Transparent
+                    ),
+                    center = centerPoint,
+                    radius = radius
+                ),
+                radius = radius,
+                center = centerPoint
+            )
+        }
+        for ((sx, sy) in seeds) {
+            drawCircle(
+                color = palette.accent.copy(alpha = 0.055f),
+                radius = 1.2f + (sx * 2.2f),
+                center = Offset(size.width * sx, size.height * sy)
+            )
         }
     }
 }

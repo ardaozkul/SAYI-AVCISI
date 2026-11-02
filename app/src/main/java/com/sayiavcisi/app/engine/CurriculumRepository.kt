@@ -7,12 +7,12 @@ import com.sayiavcisi.app.model.RuleKind
 /**
  * Müfredat: dört bölüm, hepsi baştan açık.
  *
- * Tahta her zaman 6 sütundur. Satır sayısı bölümün uzunluğunu belirler:
- * - 6 satır  : genel bölümler (6×6 = 36 blok)
- * - 10 satır : kolay çıkarma/çarpma/bölme hedefleri (6×10 = 60 blok)
- * - 50 satır : toplamanın TÜM hedefleri ve bölüm finalleri (6×50 = 300 blok)
+ * Tahta her zaman 8 sütundur. Satır sayısı bölümün uzunluğunu belirler:
+ * - 8 satır  : genel bölümler (8×8 = 64 blok)
+ * - 12 satır : kolay çıkarma/çarpma/bölme hedefleri (8×12 = 96 blok)
+ * - 60 satır : toplamanın TÜM hedefleri ve bölüm finalleri (8×60 = 480 blok)
  *
- * 1) TOPLAMA  : 1'den 30'a ardışık hedefler; her biri en az 6×50. 3'lü ve 4'lü kombolar var.
+ * 1) TOPLAMA  : 1'den 30'a ardışık hedefler; her biri en az 8×60. 2-4'lü kombolar var.
  * 2) ÇIKARMA : 1'den 12'ye fark hedefleri.
  * 3) ÇARPMA  : Çarpım tablosu hedefleri (2, 4, 6 ... 36).
  * 4) BÖLME   : Kalansız bölme hedefleri.
@@ -34,7 +34,7 @@ object CurriculumRepository {
         2 to "Farkı bul · önce büyük sayı, kombolar büyüyebilir",
         3 to "Çarpım tablosu · 2'den 36'ya",
         4 to "Kalansız bölme · önce bölünen, sonra bölen",
-        5 to "Anlık görevler · 6×100 · yeşil puan"
+        5 to "Anlık görevler · 8×120 · yeşil puan"
     )
 
     val daySymbols: Map<Int, String> = mapOf(
@@ -93,7 +93,7 @@ object CurriculumRepository {
             segmentLabel = symbol,
             minutes = minutes,
             worldKey = worldKeys[day] ?: "toplama",
-            cols = 6,
+            cols = 8,
             rows = rows,
             ruleKind = ruleKind,
             target = target,
@@ -102,9 +102,9 @@ object CurriculumRepository {
         )
     }
 
-    /** Toplama 1–30 boyunca hep 6×50; diğerlerinde kolay hedef 6×10, final 6×50. */
+    /** Toplama 1–30 boyunca hep 8×60; diğerlerinde kolay hedef 8×12, final 8×60. */
     private fun rowsFor(day: Int, target: Int, index: Int): Int {
-        if (day == 1) return 50
+        if (day == 1) return 60
 
         val long = when (day) {
             2 -> target == 12
@@ -112,7 +112,7 @@ object CurriculumRepository {
             4 -> target == 8
             else -> false
         }
-        if (long) return 50
+        if (long) return 60
 
         val easy = when (day) {
             2 -> target <= 3
@@ -120,7 +120,7 @@ object CurriculumRepository {
             4 -> target <= 3
             else -> false
         }
-        return if (easy) 10 else 6
+        return if (easy) 12 else 8
     }
 
     private fun additionLevels(): List<LevelSpec> = (1..30).map { target ->
@@ -148,7 +148,7 @@ object CurriculumRepository {
     }
 
     /**
-     * SONSUZ AV: tek bir sabit hedefi yoktur. 6×100 (tablette 15×100) tahtada temizlenen
+     * SONSUZ AV: tek bir sabit hedefi yoktur. 8×120 (tablette 20×120) tahtada temizlenen
      * her kareye hemen yeni bir sayı gelir; her doğru hamlede yeni bir anlık görev açılır.
      * Puanı normal bölümlerin sarı puanından ayrı, yeşil puandır.
      */
@@ -157,12 +157,12 @@ object CurriculumRepository {
         dayNumber = 5,
         stageIndex = 1,
         title = "Sonsuz Av",
-        subtitle = "Anlık görev · 6×100 · yeşil puan",
+        subtitle = "Anlık görev · 8×120 · yeşil puan",
         segmentLabel = "∞",
         minutes = 0,
         worldKey = "sonsuz",
-        cols = 6,
-        rows = 100,
+        cols = 8,
+        rows = 120,
         ruleKind = RuleKind.SUM,
         target = 0,
         groupSizes = listOf(2),
@@ -237,7 +237,7 @@ object CurriculumRepository {
             "Tahtadaki herhangi iki (veya üç) taşı seçebilirsin, yön ve mesafe önemli değil."
     }
 
-    /** Haritada/oyun başlığında gösterilen tahta etiketi: 6×6, 6×10, 15×100. */
+    /** Haritada/oyun başlığında gösterilen tahta etiketi: 8×8, 8×12, 20×120. */
     fun boardSizeLabel(spec: LevelSpec): String = "${spec.cols} × ${spec.rows}"
 
     /** Uzun finaller ve sonsuz av için kısa rozet metni. */
@@ -250,7 +250,7 @@ object CurriculumRepository {
 
     /** Tablette tahtayı yatay büyütmek için kopya; levelId aynı kalır. */
     fun withColumns(spec: LevelSpec, columns: Int): LevelSpec {
-        val safe = columns.coerceIn(4, 20)
+        val safe = columns.coerceIn(4, 24)
         // Çıkarma/çarpma/bölme normal bölümlerde ikili gruplarla oynanır; tek sütun
         // son satırda eşsiz taş bırakmasın diye en yakın çift genişliğe inilir.
         val adjusted = if (!spec.endless && spec.ruleKind != RuleKind.SUM && safe % 2 == 1) {

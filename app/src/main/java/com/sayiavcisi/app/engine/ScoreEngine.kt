@@ -8,8 +8,10 @@ import kotlin.math.max
 /**
  * Puanlama.
  *
- * - Her doğru eşleşme puan getirir; üst üste doğru hamle serisi bonusu büyütür.
- * - Kombolar sınırlanmaz: 3'ten 8 taşa kadar büyüyen kombolar giderek daha çok bonus alır.
+ * - Her doğru eşleşme puan getirir; üst üste doğru hamle serisi KATLANARAK büyür.
+ *   Seri 3'te bir ikiye katlanır: 3 doğru ×2, 6 doğru ×4, 9 doğru ×8, 12 doğru ×16 ...
+ *   Bir üst sınır yoktur; sayaç yalnızca Int taşmasına karşı doyuma ulaşır.
+ * - Kombolar da sınırlanmaz: 3'ten 8 taşa kadar büyüyen kombolar giderek daha çok bonus alır.
  *   3 taş +5, 4 taş +12, 5 taş +18 ... 8 taş +36. Ekranda kocaman yazar.
  * - Yanlış eşleşme bölüm puanından 2 puan götürür (0'ın altına inmez).
  * - Bir günde gösterge için 100 puanlık tavan korunur; bölüm puanı tavandan bağımsızdır.
@@ -21,8 +23,29 @@ object ScoreEngine {
     /** Yanlış eşleşmenin bölüm puanından götürdüğü puan. */
     const val WRONG_PENALTY = 2
 
-    /** Üst üste doğrular için eklenen puan; en fazla +8. */
-    fun streakBonus(streak: Int): Int = max(0, streak - 1).coerceAtMost(8)
+    /**
+     * Ardışık doğru serisinin puan çarpanı. Her 3 doğruda bir ikiye katlanır ve
+     * oyun boyunca sınırsızdır. Pratikte yalnızca Int taşmasını önlemek için doyum yapar.
+     */
+    fun comboMultiplier(streak: Int): Int {
+        if (streak <= 1) return 1
+        val doublings = streak / 3
+        return if (doublings >= 30) Int.MAX_VALUE / 8 else 1 shl doublings
+    }
+
+    /** Ekranda yazan kombo adı; seri büyüdükçe daha coşkulu olur. */
+    fun comboTitle(streak: Int): String = when {
+        streak < 2 -> ""
+        streak < 4 -> "KOMBO"
+        streak < 7 -> "SÜPER KOMBO"
+        streak < 10 -> "MEGA KOMBO"
+        streak < 14 -> "EFSANE KOMBO"
+        streak < 20 -> "İNANILMAZ KOMBO"
+        else -> "SAYI AVCISI"
+    }
+
+    /** Eski seri bonusunun yerini çarpan aldı; dış çağrılar için 1 tabanlı çarpan döner. */
+    fun streakBonus(streak: Int): Int = comboMultiplier(streak)
 
     /** Tek bir doğru eşleşmenin ham puanı. */
     fun matchPoints(spec: LevelSpec, groupSize: Int, streak: Int, doubleNext: Boolean): Int {
@@ -32,19 +55,24 @@ object ScoreEngine {
             RuleKind.PRODUCT -> 6
             RuleKind.QUOTIENT -> 7
         }
-        val raw = base + comboBonus(groupSize) + sizeBonus(spec.totalCells) + streakBonus(streak)
-        return if (doubleNext) raw * 2 else raw
+        val raw = base + comboBonus(groupSize) + sizeBonus(spec.totalCells)
+        val multiplied = safeMultiply(raw, comboMultiplier(streak))
+        return if (doubleNext) safeMultiply(multiplied, 2) else multiplied
     }
 
-    /** Büyüyen kombonun ekstra puanı: 3 taş +5'ten 8 taş +36'ya kadar. */
-    fun comboBonus(groupSize: Int): Int = when (groupSize) {
-        3 -> 5
-        4 -> 12
-        5 -> 18
-        6 -> 24
-        7 -> 30
-        8 -> 36
-        else -> 0
+    /** Oyun puanı taşmasın: aşırı büyük seride bile makul bir tavanda durur. */
+    private fun safeMultiply(value: Int, factor: Int): Int {
+        if (value <= 0 || factor <= 1) return value
+        val limit = Int.MAX_VALUE / 8
+        return if (value > limit / factor) limit else value * factor
+    }
+
+    /** Büyüyen kombonun ekstra puanı: 3 taş +5'ten başlar, her ek taşta büyümeye devam eder. */
+    fun comboBonus(groupSize: Int): Int = when {
+        groupSize < 3 -> 0
+        groupSize == 3 -> 5
+        groupSize == 4 -> 12
+        else -> 12 + (groupSize - 4) * 6
     }
 
     /**
@@ -61,9 +89,13 @@ object ScoreEngine {
         val combo = when (groupSize) {
             3 -> 6
             4 -> 12
+            5 -> 18
+            6 -> 24
+            7 -> 30
+            8 -> 36
             else -> 0
         }
-        return base + combo + streakBonus(streak)
+        return safeMultiply(base + combo, comboMultiplier(streak))
     }
 
     /** Büyük tahtalarda avlamak biraz daha değerli. */

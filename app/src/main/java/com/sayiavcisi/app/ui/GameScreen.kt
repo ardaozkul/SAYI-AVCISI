@@ -48,6 +48,7 @@ import com.sayiavcisi.app.audio.SoundEffectsManager
 import com.sayiavcisi.app.engine.CurriculumRepository
 import com.sayiavcisi.app.engine.GameSession
 import com.sayiavcisi.app.model.BlockCell
+import com.sayiavcisi.app.model.ComboKind
 import com.sayiavcisi.app.model.LevelSpec
 import com.sayiavcisi.app.model.RuleKind
 import kotlinx.coroutines.delay
@@ -58,7 +59,7 @@ import kotlin.math.floor
  * Oyun ekranı tek işe odaklanır: tahta + üstte bölüm adı.
  *
  * - Üstte yalnızca "7 TOPLAMA" benzeri bölüm adı, ince bir ilerleme çizgisi ve yıldız puanı var.
- * - Tahta 6 sütun; satır sayısı 6, 10 veya 50 olabilir. Uzun tahtalar dikey kayar.
+ * - Tahta 8 sütun; satır sayısı 8, 12 veya 60 olabilir. Uzun tahtalar dikey kayar.
  * - Bir taşa kısa süre basılı tutulunca taş aktif olur; parmak komşu taşlara sürüklenir.
  * - Doğru kombinasyon parmak kalkmadan anında kabul edilir; taşlar yeşil parlayıp patlar.
  * - Yanlışta kırmızı sarsılma ve puan kaybı olur. 3'ten 8'e taş komboda büyük kombo kutlaması çıkar.
@@ -166,6 +167,10 @@ fun GameScreen(
             .fillMaxSize()
             .background(brush = GameVisuals.backgroundBrush(palette))
     ) {
+        AmbientBackdrop(
+            palette = palette,
+            modifier = Modifier.fillMaxSize()
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -262,6 +267,10 @@ fun GameScreen(
                     ComboBanner(
                         size = session.comboSize,
                         points = session.comboPoints,
+                        streak = session.comboStreak,
+                        title = session.comboTitle.ifBlank { "KOMBO" },
+                        multiplier = session.comboMultiplier,
+                        kinds = session.comboKinds,
                         palette = palette,
                         pointColor = if (spec.endless) GameVisuals.greenPoint else GameVisuals.gold,
                         modifier = Modifier
@@ -585,26 +594,42 @@ private fun GameHeader(
             }
         }
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp),
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(1.dp),
             modifier = Modifier.padding(end = 2.dp)
         ) {
-            Text(
-                text = "★",
-                color = GameVisuals.gold,
-                fontFamily = AppFonts.Display,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-            Text(
-                text = session.levelScore.toString(),
-                color = palette.onSurface,
-                fontFamily = AppFonts.Display,
-                fontSize = 19.sp,
-                fontWeight = FontWeight.ExtraBold,
-                maxLines = 1
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Text(
+                    text = "★",
+                    color = GameVisuals.gold,
+                    fontFamily = AppFonts.Display,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text(
+                    text = session.levelScore.toString(),
+                    color = palette.onSurface,
+                    fontFamily = AppFonts.Display,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    maxLines = 1
+                )
+            }
+            if (session.comboMultiplier > 1) {
+                Text(
+                    text = "×${session.comboMultiplier} SERİ",
+                    color = palette.accent,
+                    fontFamily = AppFonts.Body,
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.4.sp,
+                    maxLines = 1
+                )
+            }
         }
     }
 }
@@ -826,11 +851,15 @@ private fun OrderHintChip(
     }
 }
 
-/** Kocaman kombo yazısı: kısa süre ekranda kalır, yıldızlarla birlikte parlar. */
+/** Kocaman kombo yazısı: seri, çarpan ve tetiklenen kombo türleri birlikte parlar. */
 @Composable
 private fun ComboBanner(
     size: Int,
     points: Int,
+    streak: Int,
+    title: String,
+    multiplier: Int,
+    kinds: List<ComboKind>,
     palette: WorldPalette,
     pointColor: Color,
     modifier: Modifier = Modifier
@@ -838,6 +867,7 @@ private fun ComboBanner(
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(3.dp),
             modifier = Modifier
                 .popIn()
                 .background(
@@ -845,31 +875,74 @@ private fun ComboBanner(
                     shape = RoundedCornerShape(24.dp)
                 )
                 .border(1.5.dp, pointColor, RoundedCornerShape(24.dp))
-                .padding(horizontal = 26.dp, vertical = 14.dp)
+                .padding(horizontal = 22.dp, vertical = 13.dp)
         ) {
             Text(
-                text = if (size >= 4) "MÜTHİŞ KOMBO" else "SÜPER KOMBO",
+                text = title,
                 color = palette.accentDeep,
                 fontFamily = AppFonts.Display,
-                fontSize = 24.sp,
+                fontSize = if (title.length > 10) 19.sp else 23.sp,
                 fontWeight = FontWeight.ExtraBold,
                 maxLines = 1
             )
-            Text(
-                text = "$size TAŞ  +$points",
-                color = pointColor,
-                fontFamily = AppFonts.Display,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.ExtraBold,
-                maxLines = 1
-            )
-            Text(
-                text = "★  ★  ★",
-                color = pointColor,
-                fontFamily = AppFonts.Display,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                Text(
+                    text = "$size TAŞ",
+                    color = pointColor,
+                    fontFamily = AppFonts.Display,
+                    fontSize = 27.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    maxLines = 1
+                )
+                Text(
+                    text = "+$points",
+                    color = pointColor,
+                    fontFamily = AppFonts.Display,
+                    fontSize = 35.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    maxLines = 1
+                )
+            }
+            if (streak >= 2) {
+                Text(
+                    text = "SERİ $streak" + if (multiplier > 1) "  ·  ×$multiplier PUAN" else "",
+                    color = palette.accent,
+                    fontFamily = AppFonts.Body,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.5.sp,
+                    maxLines = 1
+                )
+            }
+            if (kinds.isNotEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    for (kind in kinds.take(4)) {
+                        Text(
+                            text = kind.shortLabel,
+                            color = palette.surface,
+                            fontFamily = AppFonts.Body,
+                            fontSize = 7.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.4.sp,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .background(palette.accent, RoundedCornerShape(50))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            } else {
+                Text(
+                    text = "★  ★  ★",
+                    color = pointColor,
+                    fontFamily = AppFonts.Display,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
         }
     }
 }

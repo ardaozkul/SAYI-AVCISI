@@ -49,6 +49,7 @@ fun AdventureMapScreen(
             .fillMaxSize()
             .background(GameVisuals.backgroundBrush(palette))
     ) {
+        AmbientBackdrop(palette = palette, modifier = Modifier.fillMaxSize())
         Column(
             modifier = Modifier
                 .fillMaxSize()
