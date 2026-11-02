@@ -9,10 +9,10 @@ import com.sayiavcisi.app.model.RuleKind
  *
  * Tahta her zaman 6 sütundur. Satır sayısı bölümün uzunluğunu belirler:
  * - 6 satır  : genel bölümler (6×6 = 36 blok)
- * - 10 satır : ilk, kolay hedefler (6×10 = 60 blok)
- * - 50 satır : bölümün son "uzun" hedefi (6×50 = 300 blok)
+ * - 10 satır : kolay çıkarma/çarpma/bölme hedefleri (6×10 = 60 blok)
+ * - 50 satır : toplamanın TÜM hedefleri ve bölüm finalleri (6×50 = 300 blok)
  *
- * 1) TOPLAMA  : 1'den 30'a ardışık hedefler. 3'lü ve 4'lü kombinasyonlar desteklenir.
+ * 1) TOPLAMA  : 1'den 30'a ardışık hedefler; her biri en az 6×50. 3'lü ve 4'lü kombolar var.
  * 2) ÇIKARMA : 1'den 12'ye fark hedefleri.
  * 3) ÇARPMA  : Çarpım tablosu hedefleri (2, 4, 6 ... 36).
  * 4) BÖLME   : Kalansız bölme hedefleri.
@@ -30,10 +30,10 @@ object CurriculumRepository {
     )
 
     val daySubtitles: Map<Int, String> = mapOf(
-        1 to "Toplamı 1'den 30'a kadar avla · 3'lü ve 4'lü kombolar",
-        2 to "Farkı bul · iki sayı yeter",
+        1 to "Toplamı 1'den 30'a kadar avla · kombolar sınırsız (en fazla 8 taş)",
+        2 to "Farkı bul · önce büyük sayı, kombolar büyüyebilir",
         3 to "Çarpım tablosu · 2'den 36'ya",
-        4 to "Kalansız bölme · iki sayı yeter",
+        4 to "Kalansız bölme · önce bölünen, sonra bölen",
         5 to "Anlık görevler · 6×100 · yeşil puan"
     )
 
@@ -102,10 +102,11 @@ object CurriculumRepository {
         )
     }
 
-    /** Kolay hedefler en az 6×10; bölümün son hedefi 6×50 "uzun av" olur. */
+    /** Toplama 1–30 boyunca hep 6×50; diğerlerinde kolay hedef 6×10, final 6×50. */
     private fun rowsFor(day: Int, target: Int, index: Int): Int {
+        if (day == 1) return 50
+
         val long = when (day) {
-            1 -> target == 30
             2 -> target == 12
             3 -> target == 36
             4 -> target == 8
@@ -114,7 +115,6 @@ object CurriculumRepository {
         if (long) return 50
 
         val easy = when (day) {
-            1 -> target <= 3
             2 -> target <= 3
             3 -> index <= 2
             4 -> target <= 3
@@ -166,7 +166,8 @@ object CurriculumRepository {
         ruleKind = RuleKind.SUM,
         target = 0,
         groupSizes = listOf(2),
-        ruleMode = MatchRuleMode.LINE_OF_SIGHT,
+        // Sonsuz Av'da komşuluk/hat aranmaz: görevdeki taşlar tahtanın her yerinden seçilebilir.
+        ruleMode = MatchRuleMode.FREE,
         endless = true
     )
 
@@ -198,9 +199,13 @@ object CurriculumRepository {
         return levelsForDay(day).all { completedLevelIds.contains(it.levelId) }
     }
 
-    /** Üst köşede yazan tek satır: "7 toplama", "12 çıkarma", "24 çarpma". */
-    fun topTitle(spec: LevelSpec): String =
-        if (spec.endless) "Sonsuz Av" else "${spec.target} ${spec.operation.title.lowercase()}"
+    /** Üst köşede yazan tek satır: "7 toplama", "a / b = 4", "24 çarpma". */
+    fun topTitle(spec: LevelSpec): String = when {
+        spec.endless -> "Sonsuz Av"
+        // Bölmede "4 bölme" yerine işlemin kendisi görünür.
+        spec.ruleKind == RuleKind.QUOTIENT -> "a / b = ${spec.target}"
+        else -> "${spec.target} ${spec.operation.title.lowercase()}"
+    }
 
     /** Bölümün kısa hedef cümlesi. */
     fun objectiveText(spec: LevelSpec): String {
@@ -225,7 +230,7 @@ object CurriculumRepository {
     /** Kısa oynanış cümlesi: parmakla sürükleme kuralını anlatır. */
     fun howToPlayText(spec: LevelSpec): String = when {
         spec.endless ->
-            "Her görevde istenen sayıda taşı seç. Toplama 4, çıkarma ve çarpma 3, bölme 2 taş ister. Doğru hamleden sonra taşlar yenilenir."
+            "Görevdeki formülü tamamla. Komşuluk aranmaz; tahtanın her yerinden seçebilirsin. Doğru hamleden sonra taşlar yenilenir."
         spec.ruleMode == MatchRuleMode.LINE_OF_SIGHT ->
             "Bir sayıya basılı tut, parmağını komşu sayılara sürükle ve bırak. Yatay, dikey ve çapraz komşular olur; aralarında taş kalmayan uzak sayılar da komşudur."
         else ->

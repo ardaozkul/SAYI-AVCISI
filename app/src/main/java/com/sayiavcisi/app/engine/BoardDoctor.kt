@@ -41,7 +41,8 @@ object BoardDoctor {
             if (values.size != group.size) continue
             if (!RuleEngine.mathMatches(values, spec.ruleKind, spec.target)) continue
             if (RuleEngine.geometryProblem(group, active, board.ruleMode) != null) continue
-            return group
+            // Çıkarma/bölmede ipucu da doğru sırayı göstersin: büyük/bölünen önce.
+            return RuleEngine.orderedSelection(group, values, spec.ruleKind)
         }
         return validMoves(board, spec).firstOrNull()
     }

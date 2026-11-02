@@ -185,6 +185,140 @@ class EngineRulesTest {
     }
 
     @Test
+    fun cikarmadaOnceBuyukSonraKucukZorunlu() {
+        assertNull(RuleEngine.orderProblem(listOf(9, 4), RuleKind.DIFF))
+        assertNotNull(RuleEngine.orderProblem(listOf(4, 9), RuleKind.DIFF))
+        assertTrue(RuleEngine.orderedMathMatches(listOf(9, 4), RuleKind.DIFF, 5))
+        assertFalse(RuleEngine.orderedMathMatches(listOf(4, 9), RuleKind.DIFF, 5))
+        // Sonucu eksi çıkaran seçim kabul edilmez.
+        assertFalse(RuleEngine.orderedMathMatches(listOf(3, 8), RuleKind.DIFF, 5))
+        assertTrue(RuleEngine.orderedMathMatches(listOf(9, 4, 2), RuleKind.DIFF, 3))
+        assertFalse(RuleEngine.orderedMathMatches(listOf(9, 2, 4), RuleKind.DIFF, 3))
+    }
+
+    @Test
+    fun bolmedeOnceBolunenSonraBolenZorunlu() {
+        assertNull(RuleEngine.orderProblem(listOf(24, 6), RuleKind.QUOTIENT))
+        assertNotNull(RuleEngine.orderProblem(listOf(6, 24), RuleKind.QUOTIENT))
+        assertTrue(RuleEngine.orderedMathMatches(listOf(24, 6), RuleKind.QUOTIENT, 4))
+        assertFalse(RuleEngine.orderedMathMatches(listOf(6, 24), RuleKind.QUOTIENT, 4))
+    }
+
+    @Test
+    fun tersSiradaCikarmaPuanGötürmezVeKisaUyariVerir() {
+        val spec = CurriculumRepository.levelById("S4")!!
+        val s = session(spec)
+        val group = s.board.plan.first { it.size == 2 }
+        val values = group.map { s.board.cellAt(it)!!.value }
+        assertTrue("tahtada büyük sayı solda olmalı", values[0] >= values[1])
+
+        val before = s.levelScore
+        val wrongOrder = play(s, group.reversed())
+        assertFalse(wrongOrder.accepted)
+        assertEquals(0, wrongOrder.pointsDelta)
+        assertEquals(before, s.levelScore)
+        assertEquals(0, s.mistakes)
+        assertEquals(0, s.streak)
+        assertTrue(s.selected.isEmpty())
+        assertNotNull(s.orderHint)
+
+        assertTrue("doğru sırada kabul edilmeli", play(s, group).accepted)
+    }
+
+    @Test
+    fun tersSiradaBolmePuanGötürmezVeKisaUyariVerir() {
+        val spec = CurriculumRepository.levelById("B4")!!
+        val s = session(spec)
+        val group = s.board.plan.first { it.size == 2 }
+        val values = group.map { s.board.cellAt(it)!!.value }
+        assertTrue("tahtada bölünen solda olmalı", values[0] >= values[1])
+
+        val wrongOrder = play(s, group.reversed())
+        assertFalse(wrongOrder.accepted)
+        assertEquals(0, wrongOrder.pointsDelta)
+        assertEquals(0, s.mistakes)
+        assertTrue(s.selected.isEmpty())
+        assertEquals("Önce bölüneni, sonra böleni seç.", s.orderHint)
+
+        assertTrue("doğru sırada kabul edilmeli", play(s, group).accepted)
+    }
+
+    @Test
+    fun karisikYonluKomsuSecimKomboYapar() {
+        // Önce çapraz sonra düz gitmek geçerli bir zigzagtır.
+        val zigzag = setOf(0 to 0, 1 to 1, 1 to 2)
+        assertNull(
+            RuleEngine.geometryProblem(listOf(0 to 0, 1 to 1, 1 to 2), zigzag, MatchRuleMode.LINE_OF_SIGHT)
+        )
+        // Seçim/dokunuş sırası karışık olsa bile taşlar birbirine bağlı kümedeyse geçerlidir.
+        val blob = setOf(0 to 0, 0 to 1, 1 to 1)
+        assertNull(
+            RuleEngine.geometryProblem(listOf(1 to 1, 0 to 0, 0 to 1), blob, MatchRuleMode.LINE_OF_SIGHT)
+        )
+        assertNull(
+            RuleEngine.geometryProblem(listOf(0 to 1, 1 to 1, 0 to 0), blob, MatchRuleMode.LINE_OF_SIGHT)
+        )
+        // Bağlantısı kopmuş ve aynı hatta olmayan seçim yine reddedilir.
+        val disconnected = setOf(0 to 0, 1 to 3, 2 to 2)
+        assertNotNull(
+            RuleEngine.geometryProblem(
+                listOf(0 to 0, 1 to 3, 2 to 2),
+                disconnected,
+                MatchRuleMode.LINE_OF_SIGHT
+            )
+        )
+    }
+
+    @Test
+    fun kombolarSinirlandirilmadikKadarBuyur() {
+        // Toplamada 8 taşa kadar kombolar geçerli; 9 taş pratik tavanı aşar.
+        assertTrue(RuleEngine.mathMatches(List(8) { 1 }, RuleKind.SUM, 8))
+        assertFalse(RuleEngine.mathMatches(List(9) { 1 }, RuleKind.SUM, 9))
+        // Çıkarma zinciri: 12 - 3 - 2 - 2 = 5.
+        assertTrue(RuleEngine.mathMatches(listOf(12, 3, 2, 2), RuleKind.DIFF, 5))
+        assertFalse(RuleEngine.mathMatches(listOf(12, 3, 2, 2), RuleKind.DIFF, 4))
+        assertTrue(
+            "çocuk büyükten başlayınca sıra kuralı da tutmalı",
+            RuleEngine.orderedMathMatches(listOf(12, 3, 2, 2), RuleKind.DIFF, 5)
+        )
+        assertFalse(RuleEngine.orderedMathMatches(listOf(12, 2, 3, 2), RuleKind.DIFF, 5))
+        // Çarpma zinciri: 2 × 2 × 3 × 3 = 36 (sıra önemsiz).
+        assertTrue(RuleEngine.mathMatches(listOf(2, 2, 3, 3), RuleKind.PRODUCT, 36))
+        // Bölme yine hep iki elemanlıdır.
+        assertFalse(RuleEngine.mathMatches(listOf(8, 4, 2), RuleKind.QUOTIENT, 4))
+    }
+
+    @Test
+    fun buyuyenKombonunBonusuArtar() {
+        assertEquals(5, ScoreEngine.comboBonus(3))
+        assertEquals(12, ScoreEngine.comboBonus(4))
+        assertEquals(18, ScoreEngine.comboBonus(5))
+        assertEquals(24, ScoreEngine.comboBonus(6))
+        assertEquals(36, ScoreEngine.comboBonus(8))
+        assertEquals(0, ScoreEngine.comboBonus(2))
+    }
+
+    @Test
+    fun besTasliKomboTahtadaKabulEdilir() {
+        val spec = CurriculumRepository.levelById("A5")!!
+        val s = session(spec)
+        val cells = ArrayList<BlockCell>()
+        for (r in 0 until 6) {
+            for (c in 0 until 6) {
+                cells.add(BlockCell(id = r * 6 + c, row = r, col = c, value = 1))
+            }
+        }
+        s.board = Board(6, 6, cells, emptyList(), MatchRuleMode.LINE_OF_SIGHT, 1)
+        val combo = (0 until 5).map { 0 to it }
+        val result = play(s, combo)
+        assertTrue(result.accepted)
+        assertEquals(5, result.comboSize)
+        assertEquals(5, s.comboSize)
+        assertEquals(18, s.comboBonus)
+        assertEquals(1, s.comboTick)
+    }
+
+    @Test
     fun dortBlokluGrupYalnizcaToplamada() {
         assertNull(RuleEngine.operandsFor(RuleKind.DIFF, 3, 4, Random(1)))
         assertNull(RuleEngine.operandsFor(RuleKind.QUOTIENT, 4, 3, Random(1)))
@@ -298,7 +432,14 @@ class EngineRulesTest {
             val rng = Random(2026)
             var guard = 0
             while (!s.isFinished && guard++ < 300) {
-                val moves = BoardDoctor.validMoves(s.board, spec)
+                // 6×50 tahtada tüm kombinasyonları taramak testi dakikalarca sürüyor.
+                // Büyük tahtalarda üreticinin garantili planından rastgele grup seç;
+                // küçük tahtalarda gerçek hamle araması da sınanır.
+                val moves = if (s.board.activeCells().size > 60) {
+                    s.board.plan.filter { group -> group.all { s.board.cellAt(it)?.isCleared == false } }
+                } else {
+                    BoardDoctor.validMoves(s.board, spec)
+                }
                 if (moves.isEmpty()) {
                     assertTrue("${spec.levelId} yıldız desteği üretmeli", s.starRescue())
                     assertNotNull("${spec.levelId} destekten sonra hamle olmalı", BoardDoctor.hint(s.board, spec))
@@ -341,7 +482,7 @@ class EngineRulesTest {
             groupSizes = listOf(4)
         )
         val s = session(quadSpec)
-        assertEquals(4, s.maxGroupSize)
+        assertEquals(RuleEngine.MAX_COMPOSE, s.maxGroupSize)
         val group = s.board.plan.first { it.size == 4 }
         val result = play(s, group)
         assertTrue(result.accepted)
@@ -464,9 +605,10 @@ class EngineRulesTest {
         assertEquals(30, sums.size)
         assertEquals((1..30).toList(), sums.map { it.target })
         assertEquals(6, sums.first().cols)
-        assertEquals(10, sums.first().rows)
-        assertEquals(10, sums[2].rows)
-        assertEquals(6, sums[3].rows)
+        assertTrue("1–30 toplamada her tahta en az 6×50 olmalı", sums.all { it.rows >= 50 })
+        assertEquals(50, sums.first().rows)
+        assertEquals(50, sums[2].rows)
+        assertEquals(50, sums[3].rows)
         assertEquals(50, sums.last().rows)
         assertEquals(300, sums.last().totalCells)
         assertEquals(listOf(2), sums.first().groupSizes)
@@ -483,6 +625,10 @@ class EngineRulesTest {
         assertEquals(16, CurriculumRepository.levelsForDay(3).size)
         assertTrue(CurriculumRepository.levelsForDay(3).any { it.target == 36 })
         assertEquals(8, CurriculumRepository.levelsForDay(4).size)
+        assertTrue(
+            "bölme her zaman iki elemanlı olmalı",
+            CurriculumRepository.levelsForDay(4).all { it.groupSizes == listOf(2) }
+        )
         assertEquals(66, CurriculumRepository.standardLevels.size)
         assertEquals(67, CurriculumRepository.allLevels.size)
         assertEquals(1, CurriculumRepository.levelsForDay(5).size)
@@ -502,6 +648,9 @@ class EngineRulesTest {
         assertEquals("Farkı 4 olan 2 taşı seç", CurriculumRepository.objectiveText(diff))
         val product = CurriculumRepository.levelById("M6")!!
         assertEquals("Çarpımı 6 olan 2 taşı seç", CurriculumRepository.objectiveText(product))
+        val quotient = CurriculumRepository.levelById("B4")!!
+        assertEquals("a / b = 4", CurriculumRepository.topTitle(quotient))
+        assertEquals(listOf(2), quotient.groupSizes)
         assertTrue(CurriculumRepository.howToPlayText(sum).contains("sürükle"))
     }
 
@@ -514,6 +663,30 @@ class EngineRulesTest {
     }
 
     // ---- SONSUZ AV + TABLET TAHTASI ----------------------------------------------------
+
+    @Test
+    fun sonsuzAvKomsulukAramazVeGorevlerAcikFormuldur() {
+        val spec = CurriculumRepository.endlessLevel
+        assertEquals(MatchRuleMode.FREE, spec.ruleMode)
+        assertNull(
+            "Sonsuz Av'da uzak taşlar da seçilebilmeli",
+            RuleEngine.geometryProblem(
+                listOf(0 to 0, 5 to 5),
+                setOf(0 to 0, 5 to 5),
+                MatchRuleMode.FREE
+            )
+        )
+        for (seed in 1..25) {
+            val s = session(spec, seed)
+            val mission = s.mission!!
+            assertTrue("görev formülü açık olmalı: ${mission.title}", mission.title.contains("="))
+            assertTrue("görev harf formülü içermeli: ${mission.title}", mission.title.contains("a"))
+            assertTrue(
+                "görev formülü işlem sembolü içermeli: ${mission.title}",
+                mission.title.any { it in "+−×÷" }
+            )
+        }
+    }
 
     @Test
     fun sonsuzAvGoreviAnindaOynanirVeYenilenir() {

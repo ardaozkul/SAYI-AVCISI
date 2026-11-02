@@ -9,7 +9,8 @@ import kotlin.math.max
  * Puanlama.
  *
  * - Her doğru eşleşme puan getirir; üst üste doğru hamle serisi bonusu büyütür.
- * - 3'lü ve 4'lü kombinasyonlar KOMBO bonusu alır: 3 taş +5, 4 taş +12. Ekranda kocaman yazar.
+ * - Kombolar sınırlanmaz: 3'ten 8 taşa kadar büyüyen kombolar giderek daha çok bonus alır.
+ *   3 taş +5, 4 taş +12, 5 taş +18 ... 8 taş +36. Ekranda kocaman yazar.
  * - Yanlış eşleşme bölüm puanından 2 puan götürür (0'ın altına inmez).
  * - Bir günde gösterge için 100 puanlık tavan korunur; bölüm puanı tavandan bağımsızdır.
  */
@@ -35,10 +36,14 @@ object ScoreEngine {
         return if (doubleNext) raw * 2 else raw
     }
 
-    /** 3'lü ve 4'lü kombinasyonun ekstra puanı. */
+    /** Büyüyen kombonun ekstra puanı: 3 taş +5'ten 8 taş +36'ya kadar. */
     fun comboBonus(groupSize: Int): Int = when (groupSize) {
         3 -> 5
         4 -> 12
+        5 -> 18
+        6 -> 24
+        7 -> 30
+        8 -> 36
         else -> 0
     }
 

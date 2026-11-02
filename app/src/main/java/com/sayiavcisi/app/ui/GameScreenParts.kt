@@ -43,6 +43,8 @@ fun NumberTile(
     isSelected: Boolean,
     isHinted: Boolean,
     flash: TileFlash,
+    /** Seçim sırası: 0 tabanlı. Negatifse rozet gösterilmez. */
+    selectionIndex: Int = -1,
     palette: WorldPalette,
     modifier: Modifier = Modifier,
     appearDelayMillis: Int = 0,
@@ -51,6 +53,7 @@ fun NumberTile(
     textSize: TextUnit = 24.sp
 ) {
     val shape = RoundedCornerShape(14.dp)
+    val badgeSize = (textSize.value * 0.62f).dp.coerceIn(10.dp, 18.dp)
     val active = cell != null && !cell.isCleared
     val flashingCleared = cell != null && cell.isCleared &&
         (flash == TileFlash.Right || flash == TileFlash.Wrong)
@@ -135,6 +138,27 @@ fun NumberTile(
                     .size(5.dp)
                     .background(Color(0xFF1F2C26).copy(alpha = 0.10f), CircleShape)
             )
+        }
+        if (active && isSelected && selectionIndex >= 0) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(2.dp)
+                    .size(badgeSize)
+                    .background(GameVisuals.gold, CircleShape)
+                    .border(1.dp, Color.White.copy(alpha = 0.65f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = (selectionIndex + 1).toString(),
+                    color = Color(0xFF1F2C26),
+                    fontFamily = AppFonts.Display,
+                    fontSize = (badgeSize.value * 0.58f).sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
+            }
         }
         if (active && isHinted && flash == TileFlash.None) {
             GlowRing(

@@ -76,7 +76,7 @@ object BoardBuilder {
                 deck.isEmpty() -> fallbackOperands(spec, size, random)
                 else -> deck[index % deck.size]
             }
-            val ordered = combo.shuffled(random)
+            val ordered = orderedForPlay(combo, spec.ruleKind, random)
             group.forEachIndexed { i, coord ->
                 valuesByCoord[coord] = ordered.getOrElse(i) { 0 }
             }
@@ -260,6 +260,17 @@ object BoardBuilder {
         walk(cols)
         return out.distinct()
     }
+
+    /**
+     * Değerleri satıra yerleştirirken oyun sırasını da hazırlar:
+     * çıkarmada büyük sayı solda, bölmede bölünen solda olur. Böylece çocuk soldan sağa
+     * seçtiğinde "önce büyük / önce bölünen" kuralına doğal olarak uyar.
+     */
+    private fun orderedForPlay(combo: List<Int>, kind: RuleKind, random: Random): List<Int> =
+        when (kind) {
+            RuleKind.DIFF, RuleKind.QUOTIENT -> combo.sortedDescending()
+            else -> combo.shuffled(random)
+        }
 
     private fun deckFor(
         combos: List<List<Int>>,

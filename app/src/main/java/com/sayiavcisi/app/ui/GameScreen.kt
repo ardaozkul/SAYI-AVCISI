@@ -49,6 +49,7 @@ import com.sayiavcisi.app.engine.CurriculumRepository
 import com.sayiavcisi.app.engine.GameSession
 import com.sayiavcisi.app.model.BlockCell
 import com.sayiavcisi.app.model.LevelSpec
+import com.sayiavcisi.app.model.RuleKind
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.floor
@@ -60,7 +61,7 @@ import kotlin.math.floor
  * - Tahta 6 sütun; satır sayısı 6, 10 veya 50 olabilir. Uzun tahtalar dikey kayar.
  * - Bir taşa kısa süre basılı tutulunca taş aktif olur; parmak komşu taşlara sürüklenir.
  * - Doğru kombinasyon parmak kalkmadan anında kabul edilir; taşlar yeşil parlayıp patlar.
- * - Yanlışta kırmızı sarsılma ve puan kaybı olur. 3 veya 4 taşta büyük kombo kutlaması çıkar.
+ * - Yanlışta kırmızı sarsılma ve puan kaybı olur. 3'ten 8'e taş komboda büyük kombo kutlaması çıkar.
  */
 @Composable
 fun GameScreen(
@@ -77,12 +78,15 @@ fun GameScreen(
     val palette = GameVisuals.palette(spec.worldKey)
     val cellsByCoord: Map<Pair<Int, Int>, BlockCell> =
         session.board.cells.associateBy { it.coord }
+    // Seçim sırasını taşların üstündeki 1, 2, 3 rozetlerine taşır.
+    val selectionOrder = session.selected.withIndex().associate { it.value to it.index }
 
     var flashRight by remember { mutableStateOf<Set<Pair<Int, Int>>>(emptySet()) }
     var flashWrong by remember { mutableStateOf<Set<Pair<Int, Int>>>(emptySet()) }
     var gestureActive by remember { mutableStateOf(false) }
     var autoMatched by remember { mutableStateOf(false) }
     var comboBanner by remember { mutableStateOf(false) }
+    var orderHintVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(session.correctTick) {
         if (session.correctTick > 0) {
@@ -111,6 +115,16 @@ fun GameScreen(
     LaunchedEffect(session.rescueTick) {
         if (session.rescueTick > 0) SoundEffectsManager.playBonusSound()
     }
+    // Sıra uyarısı kısa görünür: çocuk hatırlatmayı okur, ekranda takılı kalmaz.
+    LaunchedEffect(session.orderHintTick) {
+        if (session.orderHintTick > 0) {
+            orderHintVisible = true
+            delay(1150)
+            orderHintVisible = false
+        } else {
+            orderHintVisible = false
+        }
+    }
     LaunchedEffect(session.isFinished) {
         if (session.isFinished) SoundEffectsManager.playLevelCompleteFanfare()
     }
@@ -124,7 +138,7 @@ fun GameScreen(
 
     // Tek tek dokunarak seçen çocuk:
     // - Doğru ya da kesin yanlış seçim ANINDA değerlendirilir (140 ms'lik minik nefes payı).
-    // - Toplamada hedefe henüz ulaşmadıysa 3. ve 4. taşı eklemesi için kısa süre beklenir;
+    // - Hedefe henüz ulaşılmadıysa ek taş eklemesi için kısa süre beklenir; kombolar sınırsızdır.
     //   çocuk devam etmezse seçim 650 ms sonra kesin sonuç olarak denenir.
     // - Sonsuz Av'da görev 4/3/2 taş istiyorsa o sayı dolmadan karar verilmez.
     LaunchedEffect(session.selected, gestureActive) {
@@ -186,6 +200,7 @@ fun GameScreen(
                     session = session,
                     palette = palette,
                     cellsByCoord = cellsByCoord,
+                    selectionOrder = selectionOrder,
                     flashRight = flashRight,
                     flashWrong = flashWrong,
                     onTap = { coord ->
@@ -210,6 +225,17 @@ fun GameScreen(
                         autoMatched = false
                     }
                 )
+
+                if (orderHintVisible && session.orderHint != null) {
+                    OrderHintChip(
+                        text = session.orderHint!!,
+                        count = session.requiredGroupSize.coerceIn(2, 4),
+                        palette = palette,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 6.dp)
+                    )
+                }
 
                 ParticleBurst(
                     trigger = session.correctTick,
@@ -356,11 +382,12 @@ private fun EndlessHeader(
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 1.4.sp
             )
+            val missionTitle = session.mission?.title ?: "Yeni görev"
             Text(
-                text = (session.mission?.title ?: "Yeni görev").uppercase(),
+                text = missionTitle.uppercase(),
                 color = palette.onSurface,
                 fontFamily = AppFonts.Display,
-                fontSize = 19.sp,
+                fontSize = if (missionTitle.length > 15) 15.sp else 19.sp,
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = 0.3.sp,
                 maxLines = 1
@@ -506,7 +533,12 @@ private fun GameHeader(
                 horizontalArrangement = Arrangement.spacedBy(7.dp)
             ) {
                 Text(
-                    text = CurriculumRepository.topTitle(spec).uppercase(),
+                    // Bölmede formül ("a / b = 4") küçük harfle ve olduğu gibi okunur.
+                    text = if (spec.ruleKind == RuleKind.QUOTIENT) {
+                        CurriculumRepository.topTitle(spec)
+                    } else {
+                        CurriculumRepository.topTitle(spec).uppercase()
+                    },
                     color = palette.onSurface,
                     fontFamily = AppFonts.Display,
                     fontSize = 23.sp,
@@ -590,6 +622,7 @@ private fun NumberBoard(
     session: GameSession,
     palette: WorldPalette,
     cellsByCoord: Map<Pair<Int, Int>, BlockCell>,
+    selectionOrder: Map<Pair<Int, Int>, Int>,
     flashRight: Set<Pair<Int, Int>>,
     flashWrong: Set<Pair<Int, Int>>,
     onTap: (Pair<Int, Int>) -> Unit,
@@ -710,6 +743,7 @@ private fun NumberBoard(
                             NumberTile(
                                 cell = cellsByCoord[coord],
                                 isSelected = session.selected.contains(coord),
+                                selectionIndex = selectionOrder[coord] ?: -1,
                                 isHinted = session.hinted.contains(coord),
                                 flash = when {
                                     flashRight.contains(coord) -> TileFlash.Right
@@ -755,6 +789,41 @@ private fun MessageLine(
             .fillMaxWidth()
             .padding(horizontal = 4.dp)
     )
+}
+
+/** Çıkarma/bölmede kısa süre görünen sıra hatırlatması: "1 → 2 · Önce büyük, sonra küçük". */
+@Composable
+private fun OrderHintChip(
+    text: String,
+    count: Int,
+    palette: WorldPalette,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .background(palette.surface.copy(alpha = 0.97f), RoundedCornerShape(50))
+            .border(1.dp, GameVisuals.gold.copy(alpha = 0.7f), RoundedCornerShape(50))
+            .padding(horizontal = 12.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
+        Text(
+            text = (1..count).joinToString(" → "),
+            color = GameVisuals.gold,
+            fontFamily = AppFonts.Display,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.ExtraBold,
+            maxLines = 1
+        )
+        Text(
+            text = text,
+            color = palette.onSurface,
+            fontFamily = AppFonts.Body,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1
+        )
+    }
 }
 
 /** Kocaman kombo yazısı: kısa süre ekranda kalır, yıldızlarla birlikte parlar. */

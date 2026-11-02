@@ -21,7 +21,8 @@ import kotlin.random.Random
  * - Çocuk bir bloğa basılı tutar, parmağını komşu bloklara sürükler; bırakınca hamle OTOMATİK
  *   kontrol edilir. "EŞLEŞTİR" düğmesi yoktur.
  * - Doğruysa taşlar yeşil parlayıp patlar, yanlışsa kırmızı olup sarsılır ve puan azalır.
- * - 2, 3 veya 4 blok seçilebilir. 3+ blokta KOMBO bonusu ve büyük kutlama vardır.
+ * - Kombolar sınırlanmaz: çocuk şartı sağladığı kadar taş seçebilir (en fazla
+ *   RuleEngine.MAX_COMPOSE); 3'ten büyük her kombine büyük kutlama vardır.
  * - Hiç geçerli hamle kalmaza YILDIZ DESTEĞİ ücretsiz olarak taşları yeniden dizer.
  */
 class GameSession(
@@ -66,10 +67,13 @@ class GameSession(
     var missionCoords: List<Pair<Int, Int>> by mutableStateOf(emptyList())
         private set
 
-    /** Aynı anda seçilebilecek en fazla blok (toplamada 4, diğer işlemlerde 2/3). */
+    /**
+     * Aynı anda seçilebilecek en fazla blok. Kombolar sınırlanmaz: çocuk şartı sağladığı
+     * kadar taş toplayabilir (pratik tavan RuleEngine.MAX_COMPOSE). Bölme hep ikilidir.
+     */
     val maxGroupSize: Int
         get() = if (spec.endless) (mission?.groupSize ?: 4)
-        else BoardBuilder.allowedSizesFor(spec).max()
+        else if (spec.ruleKind == RuleKind.QUOTIENT) 2 else RuleEngine.MAX_COMPOSE
 
     /** Dokunarak oynayan çocuk için otomatik kontrolün bekleneceği taş sayısı. */
     val requiredGroupSize: Int
@@ -105,6 +109,14 @@ class GameSession(
 
     /** İpucu her istendiğinde artar; ekran ipucunun satırına kaydırmak için bunu izler. */
     var hintTick by mutableIntStateOf(0)
+        private set
+
+    /** Çıkarma/bölmede kısa süre görünen sıra uyarısı. */
+    var orderHint: String? by mutableStateOf(null)
+        private set
+
+    /** Her sıra uyarısında artar; ekran uyarıyı ~1 saniye gösterip kapatır. */
+    var orderHintTick by mutableIntStateOf(0)
         private set
 
     /** Son doğru hamlenin taşları: yeşil parlama efekti için. */
@@ -158,7 +170,7 @@ class GameSession(
     var rescueTick by mutableIntStateOf(0)
         private set
 
-    /** 3 veya 4 taşlı kombinasyonlarda büyük kutlama efektini tetikler. */
+    /** 3 ve daha fazla taşlı kombolarda büyük kutlama efektini tetikler. */
     var comboSize by mutableIntStateOf(0)
         private set
 
@@ -265,6 +277,14 @@ class GameSession(
         hinted = emptyList()
         if (selected.contains(coord)) return
         selected = if (selected.size >= maxGroupSize) listOf(coord) else selected + coord
+        announceOrderHint()
+    }
+
+    /** Sıra gerektiren işlemlerde çocuğa kısa bir "önce büyük / önce bölünen" hatırlatması yapar. */
+    private fun announceOrderHint() {
+        val hint = RuleEngine.orderHint(activeKind) ?: return
+        orderHint = hint
+        orderHintTick += 1
     }
 
     /** Parmak yeni bir komşu bloğa girdi. Geri dönülürse seçim kısalır. */
@@ -279,6 +299,7 @@ class GameSession(
         }
         if (selected.size >= maxGroupSize) return
         selected = selected + coord
+        announceOrderHint()
     }
 
     /** Parmak kalktı. Sürükleyerek seçtiyse hamle anında denenir; tek dokunuşta beklenir. */
@@ -333,15 +354,46 @@ class GameSession(
             return true
         }
         if (RuleEngine.mathMatches(values, activeKind, activeTarget)) {
+            // Kabul edilir ya da sıra hatasını cezasız uyarı olarak gösterir.
             submit()
             return true
         }
-        if (activeKind == RuleKind.SUM && selected.size < maxGroupSize && values.sum() < activeTarget) {
-            message = "Toplam ${values.sum()} · ${maxGroupSize}. taşa kadar ekleyebilirsin."
+        // Kombolar sınırlı olmadığı için "hâlâ büyütülebilir" seçimde karar verilmez.
+        if (isMaybeExtendable(values)) {
+            message = extendableMessage(activeKind, values)
             return false
         }
         submit()
         return true
+    }
+
+    /**
+     * Seçim, ek taşlarla şartı hâlâ sağlayabilir mi? Sağlayabilirse çocuğa süre tanınır;
+     * kombolar sınırsız olduğu için yerde kalan seçim hemen "yanlış" sayılamaz.
+     */
+    private fun isMaybeExtendable(values: List<Int>): Boolean {
+        if (selected.size >= maxGroupSize) return false
+        return when (activeKind) {
+            RuleKind.SUM -> values.sum() < activeTarget
+            RuleKind.DIFF -> values.first() - values.drop(1).sum() > activeTarget
+            RuleKind.PRODUCT -> {
+                val product = values.reduce { a, b -> a * b }
+                product != 0 && product < activeTarget && activeTarget % product == 0
+            }
+
+            RuleKind.QUOTIENT -> false
+        }
+    }
+
+    /** Bekleme sırasında çocuğa gösterilen kısa durum metni. */
+    private fun extendableMessage(kind: RuleKind, values: List<Int>): String = when (kind) {
+        RuleKind.DIFF ->
+            "Fark şu an ${values.first() - values.drop(1).sum()} · küçük bir sayı daha ekleyebilirsin."
+
+        RuleKind.PRODUCT ->
+            "Çarpım şu an ${values.reduce { a, b -> a * b }} · bir sayı daha ekleyebilirsin."
+
+        else -> "Toplam ${values.sum()} · başka bir sayı daha ekleyebilirsin."
     }
 
     /** Tek dokunuşla seçim (erişilebilirlik ve tıklayarak oynayan çocuklar için). */
@@ -350,12 +402,14 @@ class GameSession(
         val cell = board.cells.firstOrNull { it.coord == coord } ?: return
         if (cell.isCleared) return
         hinted = emptyList()
-        selected = if (selected.contains(coord)) {
+        val wasSelected = selected.contains(coord)
+        selected = if (wasSelected) {
             selected.filter { it != coord }
         } else {
             val next = selected + coord
             if (next.size > maxGroupSize) next.take(maxGroupSize) else next
         }
+        if (!wasSelected) announceOrderHint()
     }
 
     // ---- Hamle -------------------------------------------------------------------------
@@ -376,7 +430,15 @@ class GameSession(
         val geometryProblem = RuleEngine.geometryProblem(selected, board.activeCoords(), board.ruleMode)
         if (geometryProblem != null) return reject(geometryProblem, values, prompt)
 
-        if (!RuleEngine.mathMatches(values, activeKind, activeTarget)) {
+        // Sıra yalnızca oyun içinde önemlidir. Matematik tutuyor ama sıra yanlışsa
+        // çocuğu cezalandırmadan seçimi temizle ve kısa bir hatırlatma göster.
+        val mathMatches = RuleEngine.mathMatches(values, activeKind, activeTarget)
+        if (mathMatches) {
+            val orderProblem = RuleEngine.orderProblem(values, activeKind)
+            if (orderProblem != null) return orderReject(orderProblem)
+        }
+
+        if (!mathMatches) {
             return reject(
                 RuleEngine.failureMessage(values, activeKind, activeTarget),
                 values,
@@ -477,6 +539,20 @@ class GameSession(
             pointsDelta = points,
             comboSize = values.size
         )
+        return lastResult!!
+    }
+
+    /**
+     * Sıra hatası: puan, seri ve hata sayacı korunur. Seçim temizlenir, kısa uyarı yanar.
+     * Böylece çocuk "yanlış yaptım" hissi yerine "önce büyük/bölünen" hatırlatması görür.
+     */
+    private fun orderReject(reason: String): MatchResult {
+        selected = emptyList()
+        hinted = emptyList()
+        orderHint = reason
+        orderHintTick += 1
+        message = reason
+        lastResult = MatchResult(false, "", reason, 0)
         return lastResult!!
     }
 
@@ -736,6 +812,8 @@ class GameSession(
         hinted = emptyList()
         lastMatchedCoords = emptyList()
         lastWrongCoords = emptyList()
+        orderHint = null
+        orderHintTick = 0
         levelScore = 0
         endlessScore = 0
         missionsSolved = 0

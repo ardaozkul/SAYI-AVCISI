@@ -15,12 +15,15 @@ import kotlin.random.Random
  * Yeni kural çocuğun parmağını sürüklemesine göre yazıldı:
  * - Aynı hatta (yatay, dikey, çapraz) ve aralarında taş kalmamış bloklar komşudur. "2 + 5" gibi
  *   aralarında boşluk olan taşlar da bu yüzden eşleşir.
- * - Parmağı komşu kareye çekerek 3 veya 4 blok seçilebilir; sıra ve yön serbesttir.
- * - Matematik sıra gözetmez: 1+4 ile 4+1, 9-4 ile 4-9 aynı kabul edilir.
- *
- * Sıra bağımsızlığı 1.x'teki "bazen oluyor bazen olmuyor" şikâyetinin kökünü kurutur.
+ * - Parmağı komşu kareye çekerek istediği kadar blok seçilebilir (en fazla [MAX_COMPOSE]);
+ *   birbirine değen karmaşık şekiller de geçerli: önce çapraz sonra düz gitmek sorun olmaz.
+ * - Tahtada matematik sıra gözetmez: 1+4 ile 4+1 aynı kabul edilir. Çıkarma ve bölmede
+ *   ancak OYUNUN İÇİNDE seçim sırası önemlidir (`orderProblem`) ve bu oynanışta uygulanır.
  */
 object RuleEngine {
+
+    /** Bir komboda seçilebilecek en fazla taş: oyun "istediğin kadarını bul" der, bu pratik tavan. */
+    const val MAX_COMPOSE = 8
 
     /** Seçilen bloklar aynı satır/sütun/45° çapraz üzerinde mi? */
     fun areCollinear(coords: List<Pair<Int, Int>>): Boolean {
@@ -63,19 +66,13 @@ object RuleEngine {
         return false
     }
 
-    /** İki blok yan yana mı (8 yön, köşe dahil)? */
-    private fun neighbours(a: Pair<Int, Int>, b: Pair<Int, Int>): Boolean {
-        val dr = abs(a.first - b.first)
-        val dc = abs(a.second - b.second)
-        return dr <= 1 && dc <= 1 && (dr + dc) > 0
-    }
-
     /**
      * Geometri kontrolü. Dönüş: null => geçerli, değilse çocuğun anlayacağı Türkçe açıklama.
      *
      * Kabul edilen iki yol:
      * 1) Hepsi aynı hatta ve aralarında aktif blok yok (uzaktaki 2 + 5 dahil).
-     * 2) Seçim sırasıyla her adım bir komşu kareye geçiyor (düz giderken çapraza dönebilir).
+     * 2) Seçim tek parça bir komşu kümedir: her taş, 8 yön komşuluk grafiğinde diğerlerine değiyor.
+     *    Önce çapraz sonra düz gitmek, L şekli, düzensiz ama bitişik kümler — hepsi geçerli.
      */
     fun geometryProblem(
         selected: List<Pair<Int, Int>>,
@@ -88,9 +85,9 @@ object RuleEngine {
         if (mode == MatchRuleMode.FREE) return null
 
         if (isCleanLine(selected, active)) return null
-        if (isNeighbourChain(selected)) return null
+        if (isConnectedCluster(selected)) return null
 
-        return "Bloklar yan yana olmalı ya da aynı hatta ilerlemeli. Çapraz ve dönüş serbest."
+        return "Bloklar birbirine değmeli ya da aynı hatta ilerlemeli. Çapraz ve dönüş serbest."
     }
 
     /** Aynı hatta, aralarında aktif blok yok. */
@@ -103,12 +100,29 @@ object RuleEngine {
         return true
     }
 
-    /** Parmağın izlediği yol: her seçim bir öncekinin komşusu. */
-    private fun isNeighbourChain(selected: List<Pair<Int, Int>>): Boolean {
-        for (i in 1 until selected.size) {
-            if (!neighbours(selected[i - 1], selected[i])) return false
+    /**
+     * Seçim tek parça komşu küme mi? Taşların SEÇİLME sırası önemli değildir: sırayla
+     * çapraz + düz geçilmiş ya da karışık dokunulmuş olsa bile, taşlar 8 yön
+     * komşuluk grafiğinde birbirine bağlanıyorsa seçim geçerlidir.
+     */
+    private fun isConnectedCluster(selected: List<Pair<Int, Int>>): Boolean {
+        val coords = selected.toSet()
+        val visited = mutableSetOf(selected.first())
+        val queue = ArrayDeque(listOf(selected.first()))
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+            for (dr in -1..1) {
+                for (dc in -1..1) {
+                    if (dr == 0 && dc == 0) continue
+                    val next = (current.first + dr) to (current.second + dc)
+                    if (coords.contains(next) && !visited.contains(next)) {
+                        visited.add(next)
+                        queue.add(next)
+                    }
+                }
+            }
         }
-        return true
+        return visited.size == selected.size
     }
 
     /** Seçimleri hat üzerinde uçtan uca sıralar; doğru çizgi değilse null döner. */
@@ -122,22 +136,20 @@ object RuleEngine {
         return selected.sortedWith(compareBy({ it.first * dr + it.second * dc }, { it.first }))
     }
 
-    /** Matematik kontrolü: sıra bağımsız. */
+    /**
+     * Matematik kontrolü: tahta üretimi için sıra bağımsız. Kombi boyutu sınırlanmaz;
+     * çocuk kaç taşla şartı sağlarsa o kadar taş kombosu olur ([MAX_COMPOSE]'a kadar).
+     */
     fun mathMatches(values: List<Int>, kind: RuleKind, target: Int): Boolean = when (kind) {
-        RuleKind.SUM -> values.size in 2..4 && values.sum() == target
-        RuleKind.DIFF -> when (values.size) {
-            2 -> abs(values[0] - values[1]) == target
-            3 -> {
-                val ordered = values.sortedDescending()
-                ordered[0] - ordered[1] - ordered[2] == target
-            }
-            else -> false
+        RuleKind.SUM -> values.size in 2..MAX_COMPOSE && values.sum() == target
+        RuleKind.DIFF -> values.size in 2..MAX_COMPOSE && run {
+            // a - b - c - ... : büyükten başlar, geri kalan tüm sayılar çıkarılır.
+            val ordered = values.sortedDescending()
+            ordered.first() - ordered.drop(1).sum() == target
         }
-        RuleKind.PRODUCT -> when (values.size) {
-            2 -> values[0] * values[1] == target
-            3 -> values[0] * values[1] * values[2] == target
-            else -> false
-        }
+        RuleKind.PRODUCT -> values.size in 2..MAX_COMPOSE &&
+            values.reduce { a, b -> a * b } == target
+        // Bölme hep iki elemanlıdır: bölünen ve bölen.
         RuleKind.QUOTIENT -> values.size == 2 && quotientMatches(values[0], values[1], target)
     }
 
@@ -147,23 +159,68 @@ object RuleEngine {
         return false
     }
 
-    /** Doğru eşleşmenin çocuk dilinde ifadesi. */
+    /**
+     * Oyun içi sıra kontrolü. Tahta üretimi sıra bağımsız kalır; yalnızca çocuğun
+     * seçim sırası çıkarma ve bölmede önemlidir.
+     *
+     * Çıkarma: önce büyük, sonra küçük. Böylece sonuç hiçbir zaman eksi çıkmaz.
+     * Bölme: önce bölünen, sonra bölen.
+     */
+    fun orderProblem(values: List<Int>, kind: RuleKind): String? = when (kind) {
+        RuleKind.DIFF -> {
+            if (values.size !in 2..MAX_COMPOSE) null
+            else if (values.zipWithNext().all { (a, b) -> a >= b }) null
+            else "Önce büyük sayıyı, sonra küçük sayıyı seç."
+        }
+
+        RuleKind.QUOTIENT -> {
+            if (values.size != 2) null
+            else if (values[1] != 0 && values[0] % values[1] == 0) null
+            else "Önce bölüneni, sonra böleni seç."
+        }
+
+        else -> null
+    }
+
+    /** Oyun içi kabul: matematik doğru ve seçim sırası doğru. */
+    fun orderedMathMatches(values: List<Int>, kind: RuleKind, target: Int): Boolean =
+        mathMatches(values, kind, target) && orderProblem(values, kind) == null
+
+    /** Çocuğa gösterilecek kısa sıra uyarısı; sıra gerektirmeyen işlemlerde null. */
+    fun orderHint(kind: RuleKind): String? = when (kind) {
+        RuleKind.DIFF -> "Önce büyük, sonra küçük"
+        RuleKind.QUOTIENT -> "Önce bölünen, sonra bölen"
+        else -> null
+    }
+
+    /**
+     * İpucu ve otomatik oynatma için koordinatları seçilmesi gereken sıraya dizer.
+     * Çıkarmada büyük, bölmede bölünen önce gelir.
+     */
+    fun orderedSelection(
+        coords: List<Pair<Int, Int>>,
+        values: List<Int>,
+        kind: RuleKind
+    ): List<Pair<Int, Int>> {
+        if (coords.size != values.size) return coords
+        return when (kind) {
+            RuleKind.DIFF, RuleKind.QUOTIENT ->
+                coords.zip(values).sortedByDescending { it.second }.map { it.first }
+
+            else -> coords
+        }
+    }
+
+    /** Doğru eşleşmenin çocuk dilinde ifadesi; seçim sırasını korur. */
     fun expressionOf(values: List<Int>, kind: RuleKind): String = when (kind) {
         RuleKind.SUM -> values.joinToString(" + ") + " = " + values.sum()
-        RuleKind.DIFF -> {
-            if (values.size == 2) {
-                val hi = values.max(); val lo = values.min()
-                "$hi - $lo = ${hi - lo}"
-            } else {
-                val ordered = values.sortedDescending()
-                "${ordered[0]} - ${ordered[1]} - ${ordered[2]} = " +
-                    "${ordered[0] - ordered[1] - ordered[2]}"
-            }
-        }
+        RuleKind.DIFF -> values.joinToString(" - ") + " = " +
+            values.drop(1).fold(values.first()) { acc, value -> acc - value }
         RuleKind.PRODUCT -> values.joinToString(" × ") + " = " + values.reduce { a, b -> a * b }
         RuleKind.QUOTIENT -> {
-            val (dividend, divisor) = quotientPair(values)
-            "$dividend ÷ $divisor = ${dividend / divisor}"
+            val dividend = values[0]
+            val divisor = values[1]
+            "$dividend ÷ $divisor = ${if (divisor == 0) 0 else dividend / divisor}"
         }
     }
 
@@ -182,16 +239,8 @@ object RuleEngine {
     fun failureMessage(values: List<Int>, kind: RuleKind, target: Int): String {
         val actual = when (kind) {
             RuleKind.SUM -> values.sum()
-            RuleKind.DIFF -> when (values.size) {
-                2 -> abs(values[0] - values[1])
-                3 -> values.sortedDescending().let { it[0] - it[1] - it[2] }
-                else -> 0
-            }
-            RuleKind.PRODUCT -> when (values.size) {
-                2 -> values[0] * values[1]
-                3 -> values[0] * values[1] * values[2]
-                else -> 0
-            }
+            RuleKind.DIFF -> values.sortedDescending().let { it.first() - it.drop(1).sum() }
+            RuleKind.PRODUCT -> values.reduce { a, b -> a * b }
             RuleKind.QUOTIENT -> {
                 val (dividend, divisor) = quotientPair(values)
                 if (divisor == 0) -1 else dividend / divisor
@@ -225,8 +274,10 @@ object RuleEngine {
             forEachCombination(active, size) { combo ->
                 val coords = combo.map { it.coord }
                 if (geometryProblem(coords, activeCoords, mode) != null) return@forEachCombination
-                if (!mathMatches(combo.map { it.value }, kind, target)) return@forEachCombination
-                moves.add(orderAlongLine(coords) ?: coords)
+                val values = combo.map { it.value }
+                if (!mathMatches(values, kind, target)) return@forEachCombination
+                val lineOrder = orderAlongLine(coords) ?: coords
+                moves.add(orderedSelection(lineOrder, values, kind))
             }
         }
         return moves.distinctBy { move -> move.map { it.first * 1000 + it.second }.sorted() }

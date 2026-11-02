@@ -15,6 +15,9 @@ import kotlin.random.Random
  *
  * Her görevde tahtaya yerleştirilecek bir örnek kombinasyon da üretilir; böylece
  * 6×100 tahtada çocuk "görev var ama yapılacak sayı yok" durumuna düşmez.
+ *
+ * Görev başlıkları kelime yerine açık formüldür: "a × b × c = 21", "a ÷ b = 4".
+ * Komşuluk aranmaz; görevdeki taşlar tahtanın her yerinden seçilebilir.
  */
 object EndlessMissionFactory {
 
@@ -50,7 +53,7 @@ object EndlessMissionFactory {
                 kind = kind,
                 target = target,
                 groupSizes = listOf(4),
-                title = "4 sayıyı topla · $target",
+                title = formula(kind, 4, target),
                 seedOperands = seed.shuffled(random)
             )
         }
@@ -64,8 +67,9 @@ object EndlessMissionFactory {
                 kind = kind,
                 target = target,
                 groupSizes = listOf(3),
-                title = "3 sayıyı çıkar · $target",
-                seedOperands = seed.shuffled(random)
+                // Çıkarmada büyük sayı önce seçilmeli; tahtaya da büyükten küçüğe dizilir.
+                title = formula(kind, 3, target),
+                seedOperands = seed.sortedDescending()
             )
         }
 
@@ -78,7 +82,7 @@ object EndlessMissionFactory {
                 kind = kind,
                 target = target,
                 groupSizes = listOf(3),
-                title = "3 sayıyı çarp · $target",
+                title = formula(kind, 3, target),
                 seedOperands = seed.shuffled(random)
             )
         }
@@ -92,9 +96,22 @@ object EndlessMissionFactory {
                 kind = kind,
                 target = target,
                 groupSizes = listOf(2),
-                title = "2 sayıyı böl · $target",
-                seedOperands = seed.shuffled(random)
+                // Bölmede bölünen önce seçilmeli; tahtaya da bölünen solda gelir.
+                title = formula(kind, 2, target),
+                seedOperands = seed.sortedDescending()
             )
         }
+    }
+
+    /** "a + b + c + d = 57" gibi açık görev formülü. */
+    private fun formula(kind: RuleKind, size: Int, target: Int): String {
+        val letters = ('a'..'d').take(size.coerceIn(2, 4))
+        val operator = when (kind) {
+            RuleKind.SUM -> " + "
+            RuleKind.DIFF -> " − "
+            RuleKind.PRODUCT -> " × "
+            RuleKind.QUOTIENT -> " ÷ "
+        }
+        return letters.joinToString(operator) + " = $target"
     }
 }

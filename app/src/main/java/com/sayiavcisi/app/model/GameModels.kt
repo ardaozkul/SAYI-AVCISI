@@ -69,7 +69,8 @@ data class LevelSpec(
     val rows: Int,
     val ruleKind: RuleKind,
     val target: Int,
-    /** Bir eşleşmede kullanılan blok sayıları. Toplamada [2, 3, 4]; diğer işlemlerde yalnızca [2]. */
+    /** Tahta döşemesinde kullanılan grup boyutları. Oyun içi kombolar sınırlı değildir:
+     * çocuk, şartı sağladığı sürece RuleEngine.MAX_COMPOSE kadar taş seçebilir. */
     val groupSizes: List<Int>,
     val ruleMode: MatchRuleMode = MatchRuleMode.LINE_OF_SIGHT,
     val timeLimitSeconds: Int? = null,
@@ -112,6 +113,22 @@ enum class JokerType(
     DOUBLE("ÇİFTE HAMLE", "ÇİFTE", "⚡", 5, "Sonraki doğru eşleşmenin puanını ikiye katlar (-5 puan)")
 }
 
+/**
+ * Doğru hamlenin tetiklediği kombo türleri.
+ *
+ * Kombo artık yalnızca "3-4 taş" değildir: ardışık doğru zinciri, hızlı cevap,
+ * hatasız oynayış, farklı işlem geçişi ve büyük grup aynı anda komboya girer.
+ * Aynı hamlede birden fazla tür tetiklenebilir; hepsi ayrı çip olarak gösterilir.
+ */
+enum class ComboKind(val label: String, val shortLabel: String) {
+    CHAIN("Ardışık zincir", "ZİNCİR"),
+    SPEED("Hızlı av", "HIZ"),
+    TRIPLE("Üçlü vurgun", "3 TAŞ"),
+    QUAD("Dörtlü vurgun", "4 TAŞ"),
+    PERFECT("Hatasız seri", "HATASIZ"),
+    MIXED("İşlem geçişi", "MİX")
+}
+
 data class MatchResult(
     val accepted: Boolean,
     val expression: String,
@@ -119,7 +136,15 @@ data class MatchResult(
     val pointsDelta: Int,
     val usedRescue: Boolean = false,
     /** Doğru hamlede seçilen taş sayısı (3 ve 4 için kombo kutlaması). */
-    val comboSize: Int = 0
+    val comboSize: Int = 0,
+    /** Bu hamlede tetiklenen kombo türleri. */
+    val comboKinds: List<ComboKind> = emptyList(),
+    /** Ardışık doğru cevap sayısı: 1 tabanlı. */
+    val comboStreak: Int = 0,
+    /** Zincir büyüdükçe katlanan puan çarpanı. */
+    val comboMultiplier: Int = 1,
+    /** Ekranda yazan kombo adı: "KOMBO", "MEGA KOMBO" ... */
+    val comboTitle: String = ""
 )
 
 /**

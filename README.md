@@ -6,17 +6,17 @@
 Bir sayıya basılı tut, parmağını komşu sayılara sürükle ve bırak. Hamle kendiliğinden kontrol edilir:
 doğruysa taşlar yeşil parlar, yanlışsa kırmızı olup sarsılır ve puan azalır. Düğmeye basmak yok.
 
-> **4.0.0 yeni bir görünüm ve yeni bir oyun modu getirdi.** Turuncu tema yerine mürekkep
-> laciverti, eski kâğıt ve adaçayı yeşili geldi; yazı tipi Bricolage Grotesque + Public Sans oldu.
-> Tahtalar kolay hedeflerde **6×10**, genel hedeflerde **6×6**, bölüm finalinde **6×50**.
-> **Sonsuz Av** modunda 6×100 (geniş tablette 15×100) tahtada anlık görevler gelir, temizlenen kare
-> anında yenilenir ve kazanılan **yeşil puan** ayrı bir kayıtta tutulur.
+> **4.2.0 daha derin pratik getirdi.** Toplamanın 1–30 arasındaki **bütün** hedefleri artık
+> en az **6×50** tahtada oynanır. Çıkarmada önce büyük sonra küçük, bölmede önce bölünen sonra
+> bölen seçilir; seçilen taşlarda **1, 2, 3** sıra rozetleri ve kısa süreli sıra uyarısı vardır.
+> **Sonsuz Av** komşuluk aramaz; görevler `a × b × c = 21`, `a ÷ b = 4` gibi açık formüllerle yazılır.
+> Tema yine mürekkep laciverti, eski kâğıt ve adaçayı yeşili; yeşil Sonsuz Av puanı ayrı kaydedilir.
 
 ---
 
 ## 📲 KURULUM DOSYASI (APK)
 
-Derlenmiş ve doğrudan Android telefon/tabletlere kurulmaya hazır **APK v4.0.0**:
+Derlenmiş ve doğrudan Android telefon/tabletlere kurulmaya hazır **APK v4.2.0**:
 
 - 🚀 **Doğrudan indirme (ana paket):**
   👉 **[https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk](https://github.com/ardaozkul/SAYI-AVCISI/raw/main/SAYI-AVCISI.apk)**
@@ -48,11 +48,47 @@ Derlenmiş ve doğrudan Android telefon/tabletlere kurulmaya hazır **APK v4.0.0
 
 - **Komşuluk:** Yatay, dikey ve çapraz komşular geçerlidir. Aralarında taş kalmayan uzak sayılar
   da (ör. aynı satırdaki `2` ve `5`) komşu sayılır. Düz giderken çapraza dönebilirsin.
-- **Grup boyutu:** Toplamada 2, 3 veya 4 taş; çıkarma/çarpma/bölmede 2 taş. Sonsuz Av’da görev neyi isterse o kadar.
+- **Grup boyutu:** Kombolar sınırlı değildir; şartı kaç taşla sağlıyorsan o kadar taş seçersin (en fazla 8).
+  Bölme her zaman iki taşlıdır; Sonsuz Av'da görev neyi isterse o kadar.
+- **Çıkarmada sıra:** Önce **büyük** sayı, sonra **küçük** sayı seçilir. Sonucu eksi çıkaracak seçim kabul
+  edilmez; yanlış sırada seçim puan götürmez, kısa bir “önce büyük, sonra küçük” uyarısı verir.
+- **Bölmede sıra:** Önce **bölünen**, sonra **bölen** seçilir. Bölme her zaman iki taşlıdır; yanlış sırada
+  seçim yine puan götürmez, “önce bölünen, sonra bölen” uyarısı çıkar.
+- **Sıra rozetleri:** Seçilen taşların üzerinde **1, 2, 3** numaraları görünür; çocuk seçim sırasını takip eder.
 - **Tek dokunuşla oynayanlar:** Kesinleşen seçim 140 ms içinde değerlendirilir; doğru ya da yanlış geri
-  bildirimi anında gelir. Toplamada hedefin altında kalan seçim, 3. ve 4. taşı ekleyebilmen için kısa süre bekler.
+  bildirimi anında gelir. Hedefin altında kalan seçim, ek taş ekleyebilmen için kısa süre bekler.
 - **Yıldız desteği:** Geçerli hamle kalmazsa oyun ücretsiz olarak kalan taşları yeniden dizer;
   puan/joker gitmez, ekranda yıldız efektiyle duyurulur.
+
+---
+
+## 🆕 4.2.0 — NELER DEĞİŞTİ
+
+### 1. Toplamada daha çok pratik
+- Toplama bölümünün **1–30 arasındaki bütün hedefleri 6×50** tahtada oynanır; 6×6 kısa tahta kalmadı.
+- Her tahtada 150 grup vardır; çocuk aynı hedefi onlarca kez farklı sayılarla görür.
+
+### 2. Çıkarma ve bölmede sıra kuralı
+- Çıkarmada **önce büyük, sonra küçük** seçilir; `küçük − büyük` gibi eksi sonuçlu kombinasyon kabul edilmez.
+- Bölmede **önce bölünen, sonra bölen** seçilir; bölme her zaman iki elemanlıdır.
+- Yanlış sırada seçim **puan/seri kaybettirmez**: seçim temizlenir ve yaklaşık 1 saniye görünen kısa bir uyarı çıkar.
+- Seçilen taşların köşesinde **1, 2, 3** sıra rozetleri görünür.
+
+### 3. Bölme başlığı ve Sonsuz Av görevleri
+- Bölme bölümünün üst başlığı “4 bölme” yerine **`a / b = 4`** yazar.
+- Sonsuz Av’da komşuluk/hat aranmaz; tahtanın her yerinden taş seçilebilir.
+- Görevler kelime yerine açık formüldür: **`a + b + c + d = 57`**, **`a − b − c = 2`**,
+  **`a × b × c = 21`**, **`a ÷ b = 4`**.
+
+### 4. Kombolar sınırsız ve karışık yönli
+- **Sınır yok:** Çocuk şartı sağlamayı başardığı kadar taş seçer; 2'den 8 taşa kadar kombolar geçerlidir.
+  Bölme yine hep iki taşlıdır; Sonsuz Av görevleri formüldeki taş sayısını ister.
+- **Bonus merdiveni:** 3 taş +5, 4 taş +12, 5 taş +18, 6 taş +24, 7 taş +30, 8 taş +36.
+- **Karışık yön düzeltildi:** Önce çapraz sonra düz gitmek (zigzag), L şekli, düzensiz ama birbirine
+  değen kümeler — hepsi artık kombo sayılır. Seçim sırası değil, taşların birbirine bağlı olması geçerli.
+  Bağlantısı kopuk seçim yine reddedilir.
+- **Erken karar yok:** Hedefe ulaşmadan bırakılan seçim hemen yanlış sayılmaz; çocuğa bir taş daha
+  eklemesi için kısa süre tanınır (“Toplam 12 · başka bir sayı daha ekleyebilirsin.”).
 
 ---
 
@@ -81,8 +117,9 @@ Derlenmiş ve doğrudan Android telefon/tabletlere kurulmaya hazır **APK v4.0.0
   15 gibi tek sütunlarda da sorunsuz çalışır.
 
 ### 3. Sonsuz Av — yeni mod
-- Sabit bir başlık yoktur. Üstte o anki **görev** yazar; görev doğru tamamlanınca yenisi gelir.
+- Sabit bir başlık yoktur. Üstte o anki **görev formülü** yazar; görev doğru tamamlanınca yenisi gelir.
 - Görev sırası: **4 sayı topla → 3 sayı çıkar → 3 sayı çarp → 2 sayı böl** ve baştan tekrar.
+- Komşuluk aranmaz; görevdeki sayılar 6×100 tahtanın her yerinden seçilebilir.
 - Doğru hamlede temizlenen kareler **anında** yeni sayılarla dolar; tahta hiç boş kalmaz.
 - Her görev için tahtaya oynanabilir bir örnek kombinasyon yerleştirilir; “görev var ama
   yapılacak sayı yok” durumu oluşmaz.
@@ -101,13 +138,14 @@ Derlenmiş ve doğrudan Android telefon/tabletlere kurulmaya hazır **APK v4.0.0
 - Tahta, hedefin **tüm** kombinasyonlarını içeren karıştırılmış bir desteden doldurulur.
   “4 toplamı” bölümünde `0+4`, `1+3` ve `2+2` aynı sıklıkta gelir; tek bir kombinasyona sıkışmaz.
 - Toplamada `1+2+3`, `1+1+5`, `0+0+7` gibi üçlüler ve `0+1+2+4` gibi dörtlüler de geçerli.
-- Sıra ve yön önemsizdir: `1+4` ile `4+1`, `9−4` ile `4−9` aynı kabul edilir.
+- Toplama ve çarpmada sıra önemsizdir: `1+4` ile `4+1` aynı kabul edilir. 4.2.0’dan beri çıkarma ve
+  bölmede ise oyun içi seçim sırası önemlidir (önce büyük/bölünen).
 - 3 taşlı komboda **SÜPER KOMBO**, 4 taşlı komboda **MÜTHİŞ KOMBO** kutlaması çıkar.
 
 ### 6. Bölüm yapısı — 66 bölüm + Sonsuz Av
 | Bölüm | İçerik | Tahta |
 |:---|:---|:---|
-| ➕ Toplama | 1’den 30’a ardışık hedefler; 3’lü ve 4’lü kombinasyonlar | 6×10 / 6×6 / 6×50 |
+| ➕ Toplama | 1’den 30’a ardışık hedefler; 3’lü ve 4’lü kombinasyonlar | **6×50 (hepsi)** |
 | ➖ Çıkarma | Farkı 1–12 | 6×10 / 6×6 / 6×50 |
 | ✖️ Çarpma Tablosu | 2, 4, 6 … 36 (16 hedef) | 6×10 / 6×6 / 6×50 |
 | ➗ Bölme | Kalansız bölme, 1–8 | 6×10 / 6×6 / 6×50 |
@@ -117,9 +155,10 @@ Derlenmiş ve doğrudan Android telefon/tabletlere kurulmaya hazır **APK v4.0.0
 
 ---
 
-## 📸 EKRAN GÖRÜNTÜLERİ (4.0.0)
+## 📸 EKRAN GÖRÜNTÜLERİ (4.0.0 görünümü)
 
-Kareler Android emülatöründe kurulu yeni APK’dan gerçek oynanışla alındı.
+Kareler Android emülatöründe gerçek oynanışla alındı; 4.2.0 aynı temayı kullanır ve
+yeni sıra rozetleri/uyarıları oyun içinde eklenmiştir.
 
 | Giriş | Bölümler | 6×10 Kolay Tahta |
 |:---:|:---:|:---:|
@@ -145,13 +184,13 @@ cd SAYI-AVCISI
 ```
 
 - Kotlin, Jetpack Compose (BOM 2025.12.01), minSdk 24, targetSdk 35.
-- Sürüm: `versionCode 5`, `versionName 4.0.0`.
+- Sürüm: `versionCode 7`, `versionName 4.2.0`.
 - Release APK, projede tanımlı debug imzasıyla üretilir; mağaza dışı kurulum içindir.
 
 ### Mimari
 ```
 model/GameModels.kt         LevelSpec, Board, BlockCell, MatchResult, EndlessMission
-engine/RuleEngine.kt        komşuluk/çizgi geometrisi, sıra bağımsız matematik, 3'lü işlemler
+engine/RuleEngine.kt        komşuluk/çizgi geometrisi, matematik + çıkarma/bölme sıra kontrolü
 engine/BoardBuilder.kt      garantili tahta döşemesi, kombinasyon destesi, 6×100 Sonsuz tahta
 engine/EndlessMissionFactory.kt  anlık Sonsuz Av görevleri ve örnek kombinasyonlar
 engine/BoardDoctor.kt       ipucu, tıkanma tespiti, yıldız desteği
@@ -173,11 +212,15 @@ ui/ParentPanelScreen.kt     ebeveyn paneli (istatistik/ayarlar/yeşil puan kayı
 
 ## ✅ TESTLER
 
-`app/src/test/java/com/sayiavcisi/app/EngineRulesTest.kt` — **28 test, 0 başarısız**:
+`app/src/test/java/com/sayiavcisi/app/EngineRulesTest.kt` — **37 test, 0 başarısız**:
 
 - Toplamada bütün ikili/üçlü/dörtlü kombinasyonlar kabul edilir; ters sıra da geçerli.
 - `0+4`, `1+3`, `2+2` aynı tahtada bulunur (eşit dağıtım).
 - 3 sayılı çıkarma (`a−b−c`) ve çarpma (`a×b×c`) kuralları doğru çalışır.
+- Çıkarmada önce büyük sonra küçük, bölmede önce bölünen sonra bölen zorunludur; ters sıra puan götürmez.
+- Eksi sonuçlu çıkarma kombinasyonu reddedilir; bölme her zaman iki elemanlıdır.
+- Toplama 1–30’un tamamı en az 6×50 tahtadadır.
+- Sonsuz Av FREE moddadır (komşuluk aranmaz) ve görev başlıkları açık formüldür.
 - Düz giderken çapraza dönme ve aralarında taş kalmayan uzak sayılar geçerli.
 - 66 bölüm × 2 tohum: her tahta tamamen kapanır, her grup hedefi tutar.
 - Tablet sütunları (6/9/12/15) tahtayı tamamen kapatır; tek sütunda boş taş kalmaz.
